@@ -1,0 +1,6 @@
+pytorch-lightning
+wandb
+sklearn
+pandas
+seaborn
+pytorch-lightning-bolts
