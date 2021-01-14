@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 import torchvision
-from gan.models.generator import Generator
-from gan.models.discriminator import Discriminator
+from models.generator import Generator
+from models.discriminator import Discriminator
 
 import pytorch_lightning as pl
 import wandb
@@ -31,6 +31,8 @@ class GAN(pl.LightningModule):
         self.discriminator = Discriminator(img_shape=data_shape)
 
         self.fixed_random_sample=None
+
+    def print_summary(self):
         print(torchsummary.summary(self.generator,(self.hparams.latent_dim,),1))
         print(torchsummary.summary(self.discriminator,data_shape,1))
 

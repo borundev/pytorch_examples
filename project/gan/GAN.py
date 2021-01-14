@@ -1,12 +1,10 @@
 import pytorch_lightning as pl
-from gan.models.gan import GAN
-import sys
-sys.path.append('.')
+from models.gan import GAN
 from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
 from pl_bolts.datamodules.cifar10_datamodule import CIFAR10DataModule
+import os
 
-
-dm = MNISTDataModule('.')
+dm = MNISTDataModule(os.environ.get('PYTORCH_DATA','.'))
 model = GAN(*dm.size())
 
 from pytorch_lightning.loggers import WandbLogger
