@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
 import torchvision
-from models.generator import Generator
-from models.discriminator import Discriminator
+from project.gan.models.generator.generator_ff import Generator
+from project.gan.models.discriminator.discriminator_ff import Discriminator
 
 import pytorch_lightning as pl
 import wandb
@@ -15,6 +15,8 @@ class GAN(pl.LightningModule):
         channels,
         width,
         height,
+        generator,
+        discriminator,
         latent_dim: int = 100,
         lr: float = 0.0002,
         b1: float = 0.5,
@@ -26,15 +28,15 @@ class GAN(pl.LightningModule):
         self.save_hyperparameters()
 
         # networks
-        data_shape = (channels, width, height)
-        self.generator = Generator(latent_dim=self.hparams.latent_dim, img_shape=data_shape)
-        self.discriminator = Discriminator(img_shape=data_shape)
+        self.data_shape = (channels, width, height)
+        self.generator = generator
+        self.discriminator = discriminator
 
         self.fixed_random_sample=None
 
     def print_summary(self):
         print(torchsummary.summary(self.generator,(self.hparams.latent_dim,),1))
-        print(torchsummary.summary(self.discriminator,data_shape,1))
+        print(torchsummary.summary(self.discriminator,self.data_shape,1))
 
     def forward(self, z):
         return self.generator(z)
@@ -69,46 +71,78 @@ class GAN(pl.LightningModule):
 
             # ground truth result (ie: all fake)
             # put on GPU because we created this tensor inside training_loop
-            valid = torch.ones(imgs.size(0), 1)
-            valid = valid.type_as(imgs)
+            y = torch.ones(imgs.size(0), 1)
+            y = y.type_as(imgs)
 
             # adversarial loss is binary cross-entropy
-            g_loss = self.adversarial_loss(self.discriminator(generated_imgs), valid)
-            tqdm_dict = {'g_loss': g_loss}
+            y_score = self.discriminator(generated_imgs)
+            fooling_fraction = (y_score > 0.5).type(torch.float).view(-1, 1).mean()
+            g_loss = self.adversarial_loss(y_score, y)
 
-            for k,v in tqdm_dict.items():
-                pass
-                self.log('train/'+k,v,prog_bar=True)
 
-            return g_loss
+            self.log('train/g_loss',g_loss,prog_bar=True)
+            self.log('train/g_fooling_fraction',fooling_fraction,prog_bar=True)
+
+            return {'loss': g_loss,
+                    'optimizer_idx': optimizer_idx,
+                    'y_score' : y_score,
+                    'y': y
+                    }
 
         # train discriminator
         if optimizer_idx == 1:
             # Measure discriminator's ability to classify real from generated samples
 
-            # how well can it label as real?
-            valid = torch.ones(imgs.size(0), 1)
-            valid = valid.type_as(imgs)
+            y = torch.cat([torch.ones(imgs.size(0), 1),torch.zeros(imgs.size(0),1)],0).type_as(imgs)
 
-            real_loss = self.adversarial_loss(
-                self.discriminator(imgs), valid)
+            all_images= torch.cat([imgs,generated_imgs],0)
 
-            # how well can it label as fake?
-            fake = torch.zeros(imgs.size(0), 1)
-            fake = fake.type_as(imgs)
+            y_score = self.discriminator(all_images)
 
-            fake_loss = self.adversarial_loss(
-                self.discriminator(generated_imgs), fake)
+            loss = self.adversarial_loss(y_score,y)/2.
 
-            # discriminator loss is the average of these
-            d_loss = (real_loss + fake_loss) / 2
-            tqdm_dict = {'d_loss': d_loss}
+            pred = (y_score>0.5).type(torch.int).view(-1,1)
+            accuracy = (pred==y).type(torch.float).mean()
 
-            for k,v in tqdm_dict.items():
-                pass
-                self.log('train/'+k,v,prog_bar=True)
+            self.log('train/d_loss',loss,prog_bar=True)
+            self.log('train/d_accuracy',accuracy,prog_bar=True)
 
-            return d_loss
+            return {'loss': loss,
+                    'optimizer_idx': optimizer_idx,
+                    'y_score': y_score,
+                    'y': y
+                    }
+
+
+
+    def training_epoch_end(self, outputs):
+        discriminator_score=[]
+        discriminator_y=[]
+
+        for output in outputs[0]:
+            if output['optimizer_idx']==1:
+                print('found')
+                discriminator_y.append(output['y'])
+                discriminator_score.append(output['y_score'])
+
+        for output in outputs[1]:
+            if output['optimizer_idx'] == 1:
+                discriminator_y.append(output['y'])
+                discriminator_score.append(output['y_score'])
+        discriminator_score=torch.cat(discriminator_score)
+        discriminator_y=torch.cat(discriminator_y )
+        discriminator_score=torch.cat([1 - discriminator_score, discriminator_score], 1)
+
+        y_true = discriminator_y.cpu().numpy().flatten()
+        y_score = discriminator_score.detach().cpu().numpy()
+
+        self.log("train/discriminator_pr", wandb.plot.pr_curve(y_true, y_score,labels=['Fake','Real']))
+        self.log("train/discriminator_roc", wandb.plot.roc_curve(y_true, y_score, labels=['Fake', 'Real']))
+        self.log('train/discriminator_confusion_matrix', wandb.plot.confusion_matrix(y_score,
+                                                                         y_true,class_names=['Fake','Real']))
+
+
+
 
     def configure_optimizers(self):
         lr = self.hparams.lr
