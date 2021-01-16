@@ -1,2 +1,3 @@
 from .discriminator_ff import DiscriminatorFF
 from .discriminator_dcgan import DiscriminatorDCGAN
+from .discriminator_dcgan_celeba import DiscriminatorDCGAN_CELEBA

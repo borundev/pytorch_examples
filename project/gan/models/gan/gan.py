@@ -58,13 +58,14 @@ class GAN(pl.LightningModule):
 
         # generate images
         generated_imgs = self(z)
+        generated_y_score = self.discriminator(generated_imgs)
 
         # train generator
         if optimizer_idx == 0:
 
             # log sampled images
             sample_imgs = self(self.fixed_random_sample)
-            grid = torchvision.utils.make_grid(sample_imgs).detach().numpy().transpose(1,2,0)
+            grid = torchvision.utils.make_grid(sample_imgs).detach().cpu().numpy().transpose(1,2,0)
 
             #self.log('gen_images',[wandb.Image(grid)], on_step=True)
             self.logger.experiment.log({'gen_images': [wandb.Image(grid,caption='{}:{}'.format(self.current_epoch,batch_idx))]},commit=False)
@@ -76,7 +77,7 @@ class GAN(pl.LightningModule):
 
             # adversarial loss is binary cross-entropy
             y_score = self.discriminator(generated_imgs)
-            fooling_fraction = (y_score > 0.5).type(torch.float).view(-1, 1).mean()
+            fooling_fraction = (y_score > 0.5).type(torch.float).flatten().mean()
             g_loss = self.adversarial_loss(y_score, y)
 
 
@@ -91,18 +92,22 @@ class GAN(pl.LightningModule):
 
         # train discriminator
         if optimizer_idx == 1:
+
             # Measure discriminator's ability to classify real from generated samples
+            real_y = torch.ones(imgs.size(0), 1).type_as(imgs)
+            generated_y = torch.zeros(imgs.size(0), 1).type_as(imgs)
 
-            y = torch.cat([torch.ones(imgs.size(0), 1),torch.zeros(imgs.size(0),1)],0).type_as(imgs)
+            real_y_score = self.discriminator(imgs)
 
-            all_images= torch.cat([imgs,generated_imgs],0)
+            real_loss = self.adversarial_loss(real_y_score,real_y)
+            generated_loss = self.adversarial_loss(generated_y_score,generated_y)
 
-            y_score = self.discriminator(all_images)
-
-            loss = self.adversarial_loss(y_score,y)/2.
-
+            y_score = torch.cat([real_y_score,generated_y_score],0)
+            y = torch.cat([real_y,generated_y],0)
             pred = (y_score>0.5).type(torch.int).view(-1,1)
+
             accuracy = (pred==y).type(torch.float).mean()
+            loss = (real_loss+generated_loss)/2.0
 
             self.log('train/d_loss',loss,prog_bar=True)
             self.log('train/d_accuracy',accuracy,prog_bar=True)
@@ -121,7 +126,6 @@ class GAN(pl.LightningModule):
 
         for output in outputs[0]:
             if output['optimizer_idx']==1:
-                print('found')
                 discriminator_y.append(output['y'])
                 discriminator_score.append(output['y_score'])
 

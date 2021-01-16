@@ -1,2 +1,3 @@
 from .generator_ff import GeneratorFF
 from .generator_dcgan import GeneratorDCGAN
+from .generator_dcgan_celeba import GeneratorDCGAN_CELEBA

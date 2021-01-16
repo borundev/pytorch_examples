@@ -6,4 +6,4 @@ class Discriminator(nn.Module):
         self.img_shape=img_shape
 
     def forward(self, img):
-        raise NotImplementedError()
+        return self.model(img)

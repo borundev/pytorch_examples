@@ -2,11 +2,14 @@ import numpy as np
 import torch.nn as nn
 import torch
 from project.gan.models.discriminator.discriminator import Discriminator
+from project.gan.models.utils import LambdaModule
+
 
 class DiscriminatorFF(Discriminator):
     def __init__(self, img_shape):
         super().__init__(img_shape)
         self.model = nn.Sequential(
+            LambdaModule(lambda img:img.view(img.size(0), -1)),
             nn.Linear(int(np.prod(img_shape)), 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
@@ -15,10 +18,6 @@ class DiscriminatorFF(Discriminator):
             nn.Sigmoid(),
         )
 
-    def forward(self, img):
-        img_flat = img.view(img.size(0), -1)
-        validity = self.model(img_flat)
-        return validity
 
 if __name__== '__main__':
     from torchsummary import summary
