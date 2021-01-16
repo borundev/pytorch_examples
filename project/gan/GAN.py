@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 
-data = 'CELEBA'
+data = 'MNIST'
 Generator = Discriminator = DataModule = None
 path = Path(os.environ.get('PYTORCH_DATA','.'))
 
@@ -45,7 +45,7 @@ model = GAN(*dm.size(),latent_dim=latent_dim, generator=generator, discriminator
 from pytorch_lightning.loggers import WandbLogger
 
 
-logger = WandbLogger(project='gan_celeba')
+logger = WandbLogger(project='gan_mnist')
 
 dm.prepare_data()
 dm.setup()
@@ -61,12 +61,10 @@ else:
     device = 'cpu'
     gpus=0
 
-print(device,gpus)
-real_images=np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu().detach().numpy(),(1,2,0))
+real_images=np.transpose(vutils.make_grid(real_batch[0].to(device)[:6], padding=2, normalize=True).cpu().detach().numpy(),(1,2,0))
 logger.experiment.log({'real_sample':[wandb.Image(real_images, caption='Real Images')]})
 trainer = pl.Trainer(gpus=gpus,
                      max_epochs=5,
-                     progress_bar_refresh_rate=20,
                      logger=logger,
                      )
 trainer.fit(model, dm)
