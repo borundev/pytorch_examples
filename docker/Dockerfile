@@ -13,3 +13,4 @@ COPY environment.yml environment.yml
 COPY requirements.txt requirements.txt
 RUN conda env update -f environment.yml
 RUN pip install torchsummary
+RUN pip install plotly
