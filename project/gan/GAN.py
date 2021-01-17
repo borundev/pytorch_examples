@@ -1,4 +1,6 @@
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from models.gan import GAN
 from project.gan.models.generator import GeneratorFF,GeneratorDCGAN, GeneratorDCGAN_CELEBA
 from project.gan.models.discriminator import DiscriminatorFF,DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
@@ -15,7 +17,7 @@ import sys
 from pathlib import Path
 
 
-data = 'MNIST'
+data = 'CIFAR'
 Generator = Discriminator = DataModule = None
 path = Path(os.environ.get('PYTORCH_DATA','.'))
 
@@ -45,7 +47,7 @@ model = GAN(*dm.size(),latent_dim=latent_dim, generator=generator, discriminator
 from pytorch_lightning.loggers import WandbLogger
 
 
-logger = WandbLogger(project='gan_mnist')
+logger = WandbLogger(project='gan_memory_profiling')
 
 dm.prepare_data()
 dm.setup()
@@ -63,8 +65,20 @@ else:
 
 real_images=np.transpose(vutils.make_grid(real_batch[0].to(device)[:6], padding=2, normalize=True).cpu().detach().numpy(),(1,2,0))
 logger.experiment.log({'real_sample':[wandb.Image(real_images, caption='Real Images')]})
+dirpath=Path('/pytorch_models/gan_mnist/')
+dirpath.mkdir(parents=True,exist_ok=True)
+
+checkpoint_callback = ModelCheckpoint(
+    monitor='generator/g_fooling_fraction',
+    filepath=os.path.join(os.getcwd(), '/pytorch_models/gan_mnist/checkpoints-{epoch:02d}'),
+    save_top_k=3,
+    mode='max',
+    verbose=True
+)
+
 trainer = pl.Trainer(gpus=gpus,
-                     max_epochs=5,
+                     max_epochs=25,
                      logger=logger,
+                     checkpoint_callback=checkpoint_callback,
                      )
 trainer.fit(model, dm)
