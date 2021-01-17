@@ -1,13 +1,13 @@
 import torch
 import torch.nn.functional as F
 import torchvision
-from project.gan.models.generator.generator_ff import Generator
-from project.gan.models.discriminator.discriminator_ff import Discriminator
 from sklearn.metrics import precision_recall_curve
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 import wandb
 import torchsummary
+import os, psutil
+import numpy as np
 
 
 class GAN(pl.LightningModule):
@@ -51,14 +51,16 @@ class GAN(pl.LightningModule):
         # if this is the first run make the fixed random vector
         if self.fixed_random_sample is None:
             imgs, _ = batch
-            self.fixed_random_sample = torch.randn(6, self.hparams.latent_dim)
-            self.fixed_random_sample = self.fixed_random_sample.type_as(imgs)
+            self.fixed_random_sample = torch.randn(6, self.hparams.latent_dim, device=self.device)
 
         # log images generatd from fixed random noise status of the fixed random noise generated images
         sample_imgs = self(self.fixed_random_sample)
         grid = torchvision.utils.make_grid(sample_imgs,padding=2, normalize=True).detach().cpu().numpy().transpose(1, 2, 0)
         self.logger.experiment.log(
             {'gen_images': [wandb.Image(grid, caption='{}:{}'.format(self.current_epoch, batch_idx))]}, commit=False)
+
+        process = psutil.Process(os.getpid())
+        self.log('memory',process.memory_info().rss/(1024**3))
 
         if optimizer_idx == 0:
             return self.training_step_generator(batch, batch_idx)
@@ -71,10 +73,10 @@ class GAN(pl.LightningModule):
         batch_size = imgs.shape[0]
 
         # note z.type_as(imgs) not only type_casts but also puts on the same device
-        z = torch.randn(batch_size, self.hparams.latent_dim).type_as(imgs)
+        z = torch.randn(batch_size, self.hparams.latent_dim, device=self.device)
         generated_imgs = self(z)
         generated_y_score = self.discriminator(generated_imgs)
-        generated_y = torch.ones(imgs.size(0), 1).type_as(imgs)
+        generated_y = torch.ones(imgs.size(0), 1, device=self.device)
         g_loss = self.adversarial_loss(generated_y_score, generated_y)
 
         fooling_fraction = (generated_y_score > 0.5).type(torch.float).flatten().mean()
@@ -82,24 +84,22 @@ class GAN(pl.LightningModule):
         self.log('generator/g_loss', g_loss, prog_bar=True)
         self.log('generator/g_fooling_fraction', fooling_fraction, prog_bar=True)
 
-        return {'loss': g_loss,
-                'y_score': generated_y_score,
-                'y': generated_y
-                }
+        return {'loss': g_loss}
+
 
     def training_step_discriminator(self, batch, batch_idx):
         imgs, _ = batch
         batch_size = imgs.shape[0]
 
         # note z.type_as(imgs) not only type_casts but also puts on the same device
-        z = torch.randn(batch_size, self.hparams.latent_dim).type_as(imgs)
+        z = torch.randn(batch_size, self.hparams.latent_dim, device=self.device)
         generated_imgs = self(z)
         generated_y_score = self.discriminator(generated_imgs)
-        generated_y = torch.zeros(imgs.size(0), 1).type_as(imgs)
+        generated_y = torch.zeros(imgs.size(0), 1, device=self.device)
         generated_loss = self.adversarial_loss(generated_y_score, generated_y)
 
         real_y_score = self.discriminator(imgs)
-        real_y = torch.ones(imgs.size(0), 1).type_as(imgs)
+        real_y = torch.ones(imgs.size(0), 1, device=self.device)
         real_loss = self.adversarial_loss(real_y_score, real_y)
 
         y_score = torch.cat([real_y_score, generated_y_score], 0)
@@ -113,8 +113,8 @@ class GAN(pl.LightningModule):
         self.log('discriminator/d_accuracy', accuracy, prog_bar=True)
 
         return {'loss': loss,
-                'y_score': y_score,
-                'y': y
+                'y_score': y_score.detach().cpu().numpy(),
+                'y': y.detach().cpu().numpy()
                 }
 
     def training_epoch_end(self, outputs):
@@ -124,27 +124,31 @@ class GAN(pl.LightningModule):
         for output in outputs[1]:
             discriminator_y.append(output['y'])
             discriminator_score.append(output['y_score'])
-        discriminator_score = torch.cat(discriminator_score)
-        discriminator_y = torch.cat(discriminator_y)
-        discriminator_score = torch.cat([1 - discriminator_score, discriminator_score], 1)
+        discriminator_score = np.concatenate(discriminator_score)
+        discriminator_y = np.concatenate(discriminator_y)
+        discriminator_score = np.concatenate([1 - discriminator_score, discriminator_score], 1)
 
-        y_true = discriminator_y.cpu().numpy().flatten()
-        y_score = discriminator_score.detach().cpu().numpy()
+        y_true = discriminator_y.flatten()
+        y_score = discriminator_score
 
-        self.log("discriminator/discriminator_pr", wandb.plot.pr_curve(y_true, y_score, labels=['Fake', 'Real']))
-        self.log("discriminator/discriminator_roc", wandb.plot.roc_curve(y_true, y_score, labels=['Fake', 'Real']))
+        #self.log("discriminator/discriminator_pr", wandb.plot.pr_curve(y_true, y_score, labels=['Fake', 'Real']))
+        #self.log("discriminator/discriminator_roc", wandb.plot.roc_curve(y_true, y_score, labels=['Fake', 'Real']))
         self.log('discriminator/discriminator_confusion_matrix', wandb.plot.confusion_matrix(y_score,
                                                                                              y_true,
                                                                                              class_names=['Fake',
                                                                                                           'Real']))
 
         p, r, t = precision_recall_curve(1-y_true, y_score[:, 0])
-        plt.plot(r,p)
+        plt.plot(r,p,label='Fake')
+        p, r, t = precision_recall_curve(y_true, y_score[:, 1])
+        plt.plot(r,p, label='Real')
         plt.xlim(0,1)
         plt.ylim(0,1)
         plt.xlabel('Recall')
         plt.ylabel('Precision')
-        self.log('discriminator/fake_pr_curve',wandb.Image(plt,caption='Epoch: {}'.format(self.current_epoch)))
+        plt.grid(True)
+        plt.legend()
+        self.log('discriminator/pr_curve',wandb.Image(plt,caption='Epoch: {}'.format(self.current_epoch)))
         plt.close()
 
 
