@@ -1,0 +1,1 @@
+from .models.gan import GAN

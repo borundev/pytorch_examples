@@ -1,20 +1,17 @@
 from torch import nn
 import torch
-from project.gan.models.discriminator.discriminator import Discriminator
-from project.gan.models.utils import LambdaModule
+from gan.models.discriminator.discriminator_abstract import Discriminator
+from gan.models.utils import LambdaModule
 
 
-class DiscriminatorDCGAN_CELEBA(Discriminator):
+class DiscriminatorDCGAN(Discriminator):
     def __init__(self, img_shape ,ndf = 64,):
         super().__init__(img_shape)
         nc=img_shape[0]
         self.model = nn.Sequential(
-            LambdaModule(lambda x: x),
-            # input is (nc) x 64 x 64
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf) x 32 x 32
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            # input is (nc) x 32 x 32
+            LambdaModule(lambda x: x.view(x.size(0),nc,32,32)),
+            nn.Conv2d(nc, ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*2) x 16 x 16
@@ -30,9 +27,7 @@ class DiscriminatorDCGAN_CELEBA(Discriminator):
             nn.Sigmoid(),
             nn.Flatten(1)
         )
-
         self.apply(self.weights_init)
-
 
 
     # custom weights initialization called on netG and netD
@@ -47,15 +42,10 @@ class DiscriminatorDCGAN_CELEBA(Discriminator):
 
 if __name__== '__main__':
     from torchsummary import summary
-    img_shape = (3,64,64)
-    input = torch.randn(4,*img_shape)
-    netD = DiscriminatorDCGAN_CELEBA(img_shape)
-    netD.apply(weights_init)
+    img_shape = (3,32,32)
+    input = torch.randn(64,*img_shape)
+    netD = DiscriminatorDCGAN(img_shape)
+    netD.apply(DiscriminatorDCGAN.weights_init)
     out = netD(input)
-    #assert out.shape[1:] == (1,)
-    summary(netD, img_shape, batch_size=4)
-
-    with torch.no_grad():
-        print(netD(input).flatten())
-        print(netD(input[:2]).flatten())
-        print(netD(input[2:]).flatten())
+    assert out.shape[1:] == (1,)
+    summary(netD, img_shape, batch_size=32)

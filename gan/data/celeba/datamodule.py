@@ -35,7 +35,7 @@ class CelebaDataModule(pl.LightningDataModule):
         return DataLoader(self.dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 if __name__=='__main__':
-    data_dir = Path(os.environ.get('PYTORCH_DATA', '.')) / "celeba"
+    data_dir = Path(os.environ.get('PYTORCH_DATA', '')) / "celeba"
     dm = CelebaDataModule(data_dir)
     dm.prepare_data()
     dm.setup()
