@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 
-from pytorch_examples.gan.models import DiscriminatorDCGAN
-from pytorch_examples.gan.models import Generator
-from pytorch_examples.gan.models import LambdaModule
+from pytorch_examples.gan.models.discriminator import DiscriminatorDCGAN
+from pytorch_examples.gan.models.generator.generator_abstract import Generator
+from pytorch_examples.gan.models.utils import LambdaModule
 
 
 class GeneratorDCGAN(Generator):

@@ -1,8 +1,8 @@
 import numpy as np
 import torch.nn as nn
 import torch
-from pytorch_examples.gan.models import Discriminator
-from pytorch_examples.gan.models import LambdaModule
+from pytorch_examples.gan.models.discriminator.discriminator_abstract import Discriminator
+from pytorch_examples.gan.models.utils import LambdaModule
 
 
 class DiscriminatorFF(Discriminator):

@@ -11,9 +11,9 @@ from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
-from pytorch_examples.gan.data import CelebaDataModule
-from pytorch_examples.gan.models import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
-from pytorch_examples.gan.models import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
+from pytorch_examples.gan.data.celeba import CelebaDataModule
+from pytorch_examples.gan.models.discriminator import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
+from pytorch_examples.gan.models.generator import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
 from models.gan import GAN
 
 
@@ -79,6 +79,5 @@ trainer = pl.Trainer(gpus=gpus,
                      max_epochs=25,
                      logger=logger,
                      checkpoint_callback=checkpoint_callback,
-                     limit_train_batches=10,
                      )
 trainer.fit(model, dm)
