@@ -2,9 +2,9 @@ import numpy as np
 import torch.nn as nn
 import torch
 
-from gan.models.generator.generator_abstract import Generator
-from gan.models.discriminator import DiscriminatorFF
-from gan.models.utils import LambdaModule
+from pytorch_examples.gan.models import Generator
+from pytorch_examples.gan.models import DiscriminatorFF
+from pytorch_examples.gan.models import LambdaModule
 
 
 class GeneratorFF(Generator):

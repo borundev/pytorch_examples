@@ -1,19 +1,18 @@
 import torch
 from torch import nn
 
-from gan.models.discriminator import DiscriminatorDCGAN_CELEBA
-from gan.models.generator.generator_abstract import Generator
-from gan.models.utils import LambdaModule
+from pytorch_examples.gan.models import DiscriminatorDCGAN
+from pytorch_examples.gan.models import Generator
+from pytorch_examples.gan.models import LambdaModule
 
 
-class GeneratorDCGAN_CELEBA(Generator):
+class GeneratorDCGAN(Generator):
     def __init__(self, latent_dim, img_shape,ngf=64):
         super().__init__(latent_dim, img_shape)
         nc=img_shape[0]
         self.model = nn.Sequential(
-            LambdaModule(lambda x: x),
             # input is Z, going into a convolution
-            LambdaModule(lambda x: x.unsqueeze(-1).unsqueeze(-1)),
+            LambdaModule(lambda x: x.view(x.size(0),x.size(1),1,1)),
             nn.ConvTranspose2d( latent_dim, ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(ngf * 8),
             nn.ReLU(True),
@@ -26,16 +25,15 @@ class GeneratorDCGAN_CELEBA(Generator):
             nn.BatchNorm2d(ngf * 2),
             nn.ReLU(True),
             # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d( ngf * 2, ngf, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ngf),
-            nn.ReLU(True),
+            #nn.ConvTranspose2d( ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf*2, nc, 4, 2, 1, bias=False),
+            #nn.BatchNorm2d(ngf),
+            #nn.ReLU(True),
             # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
+            #nn.ConvTranspose2d( ngf, nc, 4, 2, 1, bias=False),
             nn.Tanh()
             # state size. (nc) x 64 x 64
         )
-
-        self.apply(self.weights_init)
 
     # custom weights initialization called on netG and netD
     @staticmethod
@@ -49,13 +47,13 @@ class GeneratorDCGAN_CELEBA(Generator):
 
 if __name__== '__main__':
     from torchsummary import summary
-    latent_dim=100
-    img_shape=(3,64,64)
+    latent_dim=128
+    img_shape=(3,32,32)
     input = torch.randn(64, latent_dim)
-    netG = GeneratorDCGAN_CELEBA(latent_dim, img_shape)
+    netG = GeneratorDCGAN(latent_dim, img_shape)
     out_g = netG(input)
     assert out_g.shape[1:]==img_shape
-    netD = DiscriminatorDCGAN_CELEBA(img_shape)
+    netD = DiscriminatorDCGAN(img_shape)
     out_d = netD(out_g)
     assert out_d.shape[1:]==(1,)
 

@@ -11,16 +11,16 @@ from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
-from gan.data.celeba import CelebaDataModule
-from gan.models.discriminator import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
-from gan.models.generator import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
+from pytorch_examples.gan.data import CelebaDataModule
+from pytorch_examples.gan.models import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
+from pytorch_examples.gan.models import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
 from models.gan import GAN
 
 
 data = 'CIFAR'
 Generator = Discriminator = DataModule = None
-path_pytorch_data = Path(os.environ.get('PYTORCH_DATA', '.'))
-path_pytorch_models = Path(os.environ.get('PYTORCH_MODELS', '.'))
+path_pytorch_data = Path(os.environ.get('PYTORCH_DATA', ''))
+path_pytorch_models = Path(os.environ.get('PYTORCH_MODELS', ''))
 
 if data == 'MNIST':
     Generator = GeneratorFF
