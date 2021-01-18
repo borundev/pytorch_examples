@@ -1,17 +1,16 @@
 from torch import nn
 import torch
 from project.gan.models.discriminator.discriminator import Discriminator
+from project.gan.models.utils import LambdaModule
+
 
 class DiscriminatorDCGAN(Discriminator):
     def __init__(self, img_shape ,ndf = 64,):
         super().__init__(img_shape)
         nc=img_shape[0]
         self.model = nn.Sequential(
-            # input is (nc) x 64 x 64
-            #nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            #nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ndf) x 32 x 32
-            #nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            # input is (nc) x 32 x 32
+            LambdaModule(lambda x: x.view(x.size(0),nc,32,32)),
             nn.Conv2d(nc, ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
@@ -46,7 +45,7 @@ if __name__== '__main__':
     img_shape = (3,32,32)
     input = torch.randn(64,*img_shape)
     netD = DiscriminatorDCGAN(img_shape)
-    netD.apply(weights_init)
+    netD.apply(DiscriminatorDCGAN.weights_init)
     out = netD(input)
     assert out.shape[1:] == (1,)
     summary(netD, img_shape, batch_size=32)

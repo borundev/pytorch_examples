@@ -12,7 +12,7 @@ class GeneratorDCGAN(Generator):
         nc=img_shape[0]
         self.model = nn.Sequential(
             # input is Z, going into a convolution
-            LambdaModule(lambda x: x.unsqueeze(-1).unsqueeze(-1)),
+            LambdaModule(lambda x: x.view(x.size(0),x.size(1),1,1)),
             nn.ConvTranspose2d( latent_dim, ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(ngf * 8),
             nn.ReLU(True),

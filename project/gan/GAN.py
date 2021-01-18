@@ -47,7 +47,7 @@ model = GAN(*dm.size(),latent_dim=latent_dim, generator=generator, discriminator
 from pytorch_lightning.loggers import WandbLogger
 
 
-logger = WandbLogger(project='gan_memory_profiling')
+logger = WandbLogger(project='gan_cifar_2')
 
 dm.prepare_data()
 dm.setup()
