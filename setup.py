@@ -4,7 +4,7 @@ from setuptools import setup,find_packages
 packages=[]
 packages+=find_packages()
 
-setup(name='pytorch_lightning_examples',
+setup(name='pytorch_examples',
       version='0.1',
       description='Examples using pytorch and pytorch lightning',
       url='http://github.com/borundev/pytorch_lightning_examples',
