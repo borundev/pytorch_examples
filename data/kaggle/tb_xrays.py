@@ -43,7 +43,7 @@ class TransformDataset(Dataset):
 
 class TBDataModule(pl.LightningDataModule):
 
-    def __init__(self, kaggle_username, kaggle_key, train_transform=None, val_transform=None):
+    def __init__(self, kaggle_username=None, kaggle_key=None, train_transform=None, val_transform=None):
         super().__init__()
         if train_transform is None:
             train_transform = transforms.Compose([
@@ -70,9 +70,9 @@ class TBDataModule(pl.LightningDataModule):
         self.data_dir = Path(os.environ.get('PYTORCH_DATA', '.')) / 'kaggle/tuberculosis-tb-chest-xray-dataset'
 
     def prepare_data(self):
-        os.environ['KAGGLE_USERNAME'] = self.kaggle_username
-        os.environ['KAGGLE_KEY'] = self.kaggle_key
         if not self.data_dir.exists():
+            os.environ['KAGGLE_USERNAME'] = self.kaggle_username
+            os.environ['KAGGLE_KEY'] = self.kaggle_key
             cmd = "kaggle datasets download -p {path} --unzip tawsifurrahman/tuberculosis-tb-chest-xray-dataset".format(
                 path=self.data_dir)
 
