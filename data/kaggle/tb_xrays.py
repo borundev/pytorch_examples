@@ -23,7 +23,7 @@ class TBDataset(Dataset):
         img = Image.open(fname).convert('RGB')
         if self.transform is not None:
             img = self.transform(img)
-        return img, fname.parent.name
+        return img, 0 if fname.parent.name=='Normal' else 1
 
 
 class TransformDataset(Dataset):
