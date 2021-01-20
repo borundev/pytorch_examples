@@ -96,7 +96,7 @@ class TBDataModule(pl.LightningDataModule):
         return DataLoader(self.train_dataset, shuffle=True, batch_size=4, num_workers=8)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shufffle=False, batch_size=8, num_workers=8)
+        return DataLoader(self.val_dataset, shuffle=False, batch_size=8, num_workers=8)
 
     def test_dataloader(self):
         return DataLoader(self.test_dataset, shuffle=False, batch_size=8, num_workers=8)
