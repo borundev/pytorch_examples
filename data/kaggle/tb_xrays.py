@@ -71,8 +71,10 @@ class TBDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         if not self.data_dir.exists():
-            os.environ['KAGGLE_USERNAME'] = self.kaggle_username
-            os.environ['KAGGLE_KEY'] = self.kaggle_key
+            if self.kaggle_username is not None:
+                os.environ['KAGGLE_USERNAME'] = self.kaggle_username
+            if self.kaggle_key is not None:
+                os.environ['KAGGLE_KEY'] = self.kaggle_key
             cmd = "kaggle datasets download -p {path} --unzip tawsifurrahman/tuberculosis-tb-chest-xray-dataset".format(
                 path=self.data_dir)
 
