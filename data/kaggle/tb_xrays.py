@@ -5,12 +5,19 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
 import os
+import numpy as np
+
+from data.utils import MaintainRandomState
+
 
 class TBDataset(Dataset):
 
     def __init__(self, top_path):
         self.top_path = top_path
         self.files = list(self.top_path.rglob('*.jpg')) + list(self.top_path.rglob('*.png'))
+        with MaintainRandomState():
+            np.random.seed(42)
+            np.random.shuffle(self.files)
         self.transform = None
 
     def __len__(self):
@@ -110,7 +117,7 @@ class TBDataModule(pl.LightningDataModule):
 if __name__ == '__main__':
     #os.environ['KAGGLE_USERNAME']=input('Username: ')
     #os.environ['KAGGLE_KEY']= input('Key: ')
-    dm=TBDataModule()
+    dm=TBDataModule(kaggle_username='borundev',kaggle_key='e3b376c1dda03fc6c9a419f260485dc0')
     dm.prepare_data()
     dm.setup()
     train=dm.train_dataloader()
@@ -119,5 +126,8 @@ if __name__ == '__main__':
     print(y)
     x,y=next(iter(val))
     print(y)
+    np.random.shuffle(dm.ds.files)
+    print(dm.ds.files[:20])
+
 
 

@@ -1,41 +1,23 @@
-import random
-import tarfile
 from collections import Counter
 
 from PIL import Image
 import pytorch_lightning as pl
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
-from torch.utils.data import random_split, DataLoader
+from torch.utils.data import DataLoader
 from pathlib import Path
 import os
 import requests
-import torch
-import numpy as np
 from sklearn.model_selection import train_test_split
+
+from data.utils import MaintainRandomState
 
 data_url="https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
 pytorch_data_dir=Path(os.environ.get('PYTORCH_DATA','.'))
 pytorch_data_dir.mkdir(exist_ok=True)
 
 
-class MaintainRandomState:
-    def __enter__(self):
-        self.np_state = np.random.get_state()
-        self.random_state = random.getstate()
-        self.torch_state = torch.get_rng_state()
-        #self.torch_cuda_state = torch.cuda.get_rng_state_all()
 
-    def __exit__(self, type, value, traceback):
-        np.random.set_state(self.np_state)
-        random.setstate(self.random_state)
-        torch.set_rng_state(self.torch_state)
-        #torch.cuda.set_rng_state_all(self.torch_cuda_state)
-
-def untar(fname,output_dir):
-    mode="r:gz" if fname.name.endswith("tar.gz") else "r:"
-    with tarfile.open(fname,mode) as tar:
-        tar.extractall(output_dir)
 
 class CatsAndDogsDataset(Dataset):
 
