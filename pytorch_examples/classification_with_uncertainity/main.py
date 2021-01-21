@@ -1,7 +1,11 @@
+from types import MethodType
+
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
+
+from data.cats_and_dogs import CatsAndDogsDataModule
+from data.fudge_labels import GetExtraLabelsDataset, modify_data_module
 from models.resnet import CustomModel
-from data import CustomDataModule
 import wandb
 
 def run_with_mod(num_extras, name=None, max_epochs=5):
@@ -14,11 +18,13 @@ def run_with_mod(num_extras, name=None, max_epochs=5):
         logger=wandb_logger,
         )
     model = CustomModel()
-    cdm = CustomDataModule(num_extras=num_extras)
-    trainer.fit(model, cdm)
+    dm = modify_data_module(CatsAndDogsDataModule(),num_extras)
+
+    trainer.fit(model, dm)
 
     wandb.finish()
-    return model, cdm, trainer
 
-run_with_mod(2,max_epochs=1)
-
+if  __name__=='__main__':
+    run_with_mod(2,max_epochs=1)
+    #cdm = GetExtraLabelsDataModule(CatsAndDogsDataModule(), 4)
+    #x,y

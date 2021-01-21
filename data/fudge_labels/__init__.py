@@ -1,3 +1,4 @@
+from types import MethodType
 from typing import Optional
 
 import functools
@@ -27,22 +28,17 @@ class GetExtraLabelsDataset(Dataset):
         if self.num_extras:
             id_extras = get_extra_indices(idx, self.num_extras, len(self))
             extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
-            z = np.concatenate([np.array([y]), extras])
+            z = np.concatenate([np.array([y]), extras]).astype(np.float32)
             y_modified = z.mean()
             return x, y_modified, y
         else:
             return x,y
 
-class GetExtraLabelsDataModule:
+def modify_data_module(dm,num_extras):
+    dm.old_setup = dm.setup
+    def setup(self,stage=None):
+        self.old_setup(stage)
+        self.train_dataset = GetExtraLabelsDataset(self.train_dataset, num_extras)
+    dm.setup=MethodType(setup,dm)
+    return dm
 
-    def __init__(self,dm,num_extras):
-        self.dm=dm
-        self.num_extras = num_extras
-
-    def __getattr__(self, item):
-        return getattr(self.dm,item)
-
-
-    def setup(self, stage: Optional[str] = None):
-        self.dm.setup(stage)
-        self.dm.train_dataset = GetExtraLabelsDataset(self.dm.train_dataset,self.num_extras)

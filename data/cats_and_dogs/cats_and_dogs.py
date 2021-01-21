@@ -66,7 +66,7 @@ class CatsAndDogsDataset(Dataset):
         img = Image.open(filename)
         if self.transform:
             img = self.transform(img)
-        y = float(filename.name.islower()) # 1 is dog and 0 is cat
+        y = int(filename.name.islower()) # 1 is dog and 0 is cat
 
         return img, y
 

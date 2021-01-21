@@ -23,7 +23,7 @@ class BoilerPlate(pl.LightningModule):
         return NotImplementedError()
 
     def training_step(self, batch, batch_idx):
-        x, y_original, y, n = batch
+        x, y_original, y = batch
         outputs = self(x)
         _, preds = torch.max(outputs, 1)
         loss = self.loss(outputs, y)
@@ -43,14 +43,14 @@ class BoilerPlate(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y_original, y, _ = batch
+        x, y = batch
         outputs = self(x)
         _, preds = torch.max(outputs, 1)
         loss = self.loss(outputs, y)
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('val/loss', loss,on_epoch=True)
         self.log('val/accuracy', accuracy,on_epoch=True)
-        return y_original,outputs
+        return y,outputs
 
     def validation_epoch_end(self, outputs):
 
