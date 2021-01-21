@@ -4,6 +4,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
+import os
 
 class TBDataset(Dataset):
 
@@ -105,7 +106,6 @@ class TBDataModule(pl.LightningDataModule):
 
 
 if __name__ == '__main__':
-    import os
     #os.environ['KAGGLE_USERNAME']=input('Username: ')
     #os.environ['KAGGLE_KEY']= input('Key: ')
     dm=TBDataModule()
