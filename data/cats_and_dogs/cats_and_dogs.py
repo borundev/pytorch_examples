@@ -19,9 +19,6 @@ pytorch_data_dir=Path(os.environ.get('PYTORCH_DATA','.'))
 pytorch_data_dir.mkdir(exist_ok=True)
 
 
-def get_extra_indices(idx, num_extra, size):
-    return list(filter(lambda k: k != idx and k < size, [(idx // num_extra) * num_extra + i for i in range(num_extra)]))
-
 class MaintainRandomState:
     def __enter__(self):
         self.np_state = np.random.get_state()
