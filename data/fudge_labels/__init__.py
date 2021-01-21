@@ -1,7 +1,6 @@
 from typing import Optional
 
 import functools
-import pytorch_lightning as pl
 from torch.utils.data import Dataset
 import numpy as np
 
