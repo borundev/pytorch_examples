@@ -67,6 +67,8 @@ class TBDataModule(pl.LightningDataModule):
         self.kaggle_username = kaggle_username
         self.kaggle_key = kaggle_key
         self.data_dir = Path(os.environ.get('PYTORCH_DATA', '.')) / 'kaggle/tuberculosis-tb-chest-xray-dataset'
+        if not self.data_dir.exists() and self.kaggle_username is None and 'KAGGLE_USERNAME' not in os.environ:
+            raise Exception('Please provide Kaggle credentials')
 
     def prepare_data(self):
         if not self.data_dir.exists():
