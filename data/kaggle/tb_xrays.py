@@ -5,9 +5,6 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
 
-from data.fudge_labels import GetExtraLabelsDataModule
-
-
 class TBDataset(Dataset):
 
     def __init__(self, top_path):
