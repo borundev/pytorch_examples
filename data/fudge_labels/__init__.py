@@ -25,14 +25,12 @@ class GetExtraLabelsDataset(Dataset):
 
     def __getitem__(self, idx):
         x,y = self.ds[idx]
-        if self.num_extras:
-            id_extras = get_extra_indices(idx, self.num_extras, len(self))
-            extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
-            z = np.concatenate([np.array([y]), extras]).astype(np.float32)
-            y_modified = z.mean()
-            return x, y_modified, y
-        else:
-            return x,y
+        id_extras = get_extra_indices(idx, self.num_extras, len(self))
+        extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
+        z = np.concatenate([np.array([y]), extras]).astype(np.float32)
+        y_modified = z.mean()
+        return x, y_modified, y
+
 
 def modify_data_module(dm,num_extras):
     dm.old_setup = dm.setup
