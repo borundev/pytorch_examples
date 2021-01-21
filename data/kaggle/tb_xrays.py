@@ -1,12 +1,15 @@
 import os
 from pathlib import Path
 
+import functools
+from typing import Optional
+
 import pytorch_lightning as pl
 import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
-
+import numpy as np
 
 class TBDataset(Dataset):
 
@@ -39,6 +42,38 @@ class TransformDataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
         return img, label
+
+def get_extra_indices(idx, num_extra, size):
+    return list(filter(lambda k: k != idx and k < size, [(idx // num_extra) * num_extra + i for i in range(num_extra)]))
+
+class GetExtraLabelsDataset(Dataset):
+
+    def __init__(self,ds,num_extras=0):
+        self.ds=ds
+        self.num_extras=num_extras
+
+    def __len__(self):
+        return len(self.ds)
+
+    @functools.lru_cache()
+    def get_label(self,idx):
+        _,y=self.ds[idx]
+        return y
+
+    def __getitem__(self, idx):
+        x,y = self.ds[idx]
+        if self.num_extras:
+            id_extras = get_extra_indices(idx, self.num_extras, len(self))
+            extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
+            z = np.concatenate([np.array([y]), extras])
+            y_modified = z.mean()
+            return x, y_modified, y
+        else:
+            return x,y
+
+
+
+
 
 
 class TBDataModule(pl.LightningDataModule):
@@ -103,3 +138,31 @@ class TBDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test_dataset, shuffle=False, batch_size=8, num_workers=8)
 
+class TBDataModuleExtraLabels(pl.LightningDataModule):
+
+    def __init__(self,dm,num_extras):
+        self.dm=dm
+        self.num_extras = num_extras
+
+    def __getattr__(self, item):
+        return getattr(self.dm,item)
+
+
+    def setup(self, stage: Optional[str] = None):
+        self.dm.setup(stage)
+        self.dm.train_dataset = GetExtraLabelsDataset(self.dm.train_dataset,self.num_extras)
+
+
+if __name__ == '__main__':
+    import os
+    #os.environ['KAGGLE_USERNAME']=input('Username: ')
+    #os.environ['KAGGLE_KEY']= input('Key: ')
+    dm=TBDataModuleExtraLabels(TBDataModule(),4)
+    dm.prepare_data()
+    dm.setup()
+    dst=dm.train_dataset
+    dsv=dm.val_dataset
+    x,y,y_original=dst[4]
+    print(y,y_original)
+    x,y=dsv[5]
+    print(y)
