@@ -1,5 +1,6 @@
 from pathlib import Path
 import pytorch_lightning as pl
+import sklearn
 import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
@@ -12,13 +13,9 @@ from data.utils import MaintainRandomState
 
 class TBDataset(Dataset):
 
-    def __init__(self, top_path):
-        self.top_path = top_path
-        self.files = list(self.top_path.rglob('*.jpg')) + list(self.top_path.rglob('*.png'))
-        with MaintainRandomState():
-            np.random.seed(42)
-            np.random.shuffle(self.files)
-        self.transform = None
+    def __init__(self, files,transform=None):
+        self.files = files
+        self.transform = transform
 
     def __len__(self):
         return len(self.files)
@@ -30,21 +27,9 @@ class TBDataset(Dataset):
             img = self.transform(img)
         return img, 0 if fname.parent.name=='Normal' else 1
 
-
-class TransformDataset(Dataset):
-    def __init__(self, ds, transform):
-        self.ds = ds
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.ds)
-
-    def __getitem__(self, idx):
-        img, label = self.ds[idx]
-        if self.transform is not None:
-            img = self.transform(img)
-        return img, label
-
+    def get_label(self,idx):
+        fname = self.files[idx]
+        return 0 if fname.parent.name == 'Normal' else 1
 
 
 class TBDataModule(pl.LightningDataModule):
@@ -89,18 +74,28 @@ class TBDataModule(pl.LightningDataModule):
             os.system(cmd)
 
     def setup(self, stage=None):
-        self.ds = TBDataset(self.data_dir)
-        self.train_dataset, self.val_dataset, self.test_dataset = torch.utils.data.random_split(self.ds,
-                                                                                                [5040, 560, 1400],
-                                                                                                generator=torch.Generator().manual_seed(
-                                                                                                    42))
-        self.train_dataset = TransformDataset(self.train_dataset,
-                                              self.transforms['train'])
+        files = list(self.data_dir.rglob('*.jpg')) + list(self.data_dir.rglob('*.png'))
+        with MaintainRandomState():
+            np.random.seed(42)
+            np.random.shuffle(files)
+            train_files,test_files= sklearn.model_selection.train_test_split(files,train_size=5600,random_state=42)
+            train_files,val_files = sklearn.model_selection.train_test_split(train_files,train_size=5040,random_state=42)
 
-        self.val_dataset = TransformDataset(self.val_dataset,
-                                            self.transforms['val'])
-        self.test_dataset = TransformDataset(self.test_dataset,
-                                             self.transforms['val'])
+        self.train_dataset = TBDataset(train_files,self.transforms['train'])
+        self.val_dataset = TBDataset(val_files,self.transforms['val'])
+        self.test_dataset = TBDataset(test_files,self.transforms['val'])
+
+        #self.train_dataset, self.val_dataset, self.test_dataset = torch.utils.data.random_split(self.ds,
+        #                                                                                        [5040, 560, 1400],
+        #                                                                                        generator=torch.Generator().manual_seed(
+        #                                                                                            42))
+        #self.train_dataset = TransformDataset(self.train_dataset,
+        #                                      self.transforms['train'])
+
+        #self.val_dataset = TransformDataset(self.val_dataset,
+        #                                    self.transforms['val'])
+        #self.test_dataset = TransformDataset(self.test_dataset,
+        #                                     self.transforms['val'])
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, shuffle=True, batch_size=4, num_workers=8)
