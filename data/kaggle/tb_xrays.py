@@ -3,6 +3,7 @@ import pytorch_lightning as pl
 import sklearn
 import torch
 from PIL import Image
+from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
 import os
@@ -78,24 +79,12 @@ class TBDataModule(pl.LightningDataModule):
         with MaintainRandomState():
             np.random.seed(42)
             np.random.shuffle(files)
-            train_files,test_files= sklearn.model_selection.train_test_split(files,train_size=5600,random_state=42)
-            train_files,val_files = sklearn.model_selection.train_test_split(train_files,train_size=5040,random_state=42)
+            train_files,test_files= train_test_split(files,train_size=5600,random_state=42)
+            train_files,val_files = train_test_split(train_files,train_size=5040,random_state=42)
 
         self.train_dataset = TBDataset(train_files,self.transforms['train'])
         self.val_dataset = TBDataset(val_files,self.transforms['val'])
         self.test_dataset = TBDataset(test_files,self.transforms['val'])
-
-        #self.train_dataset, self.val_dataset, self.test_dataset = torch.utils.data.random_split(self.ds,
-        #                                                                                        [5040, 560, 1400],
-        #                                                                                        generator=torch.Generator().manual_seed(
-        #                                                                                            42))
-        #self.train_dataset = TransformDataset(self.train_dataset,
-        #                                      self.transforms['train'])
-
-        #self.val_dataset = TransformDataset(self.val_dataset,
-        #                                    self.transforms['val'])
-        #self.test_dataset = TransformDataset(self.test_dataset,
-        #                                     self.transforms['val'])
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, shuffle=True, batch_size=4, num_workers=8)
@@ -110,9 +99,10 @@ class TBDataModule(pl.LightningDataModule):
 
 
 if __name__ == '__main__':
-    #os.environ['KAGGLE_USERNAME']=input('Username: ')
-    #os.environ['KAGGLE_KEY']= input('Key: ')
-    dm=TBDataModule(kaggle_username='borundev',kaggle_key='e3b376c1dda03fc6c9a419f260485dc0')
+    if 'KAGGLE_USERNAME' not in os.environ:
+        os.environ['KAGGLE_USERNAME']=input('Username: ')
+        os.environ['KAGGLE_KEY']= input('Key: ')
+    dm=TBDataModule()
     dm.prepare_data()
     dm.setup()
     train=dm.train_dataloader()
