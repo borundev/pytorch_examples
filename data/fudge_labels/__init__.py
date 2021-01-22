@@ -20,7 +20,10 @@ class GetExtraLabelsDataset(Dataset):
 
     @functools.lru_cache()
     def get_label(self,idx):
-        _,y=self.ds[idx]
+        if hasattr(self.ds,'get_label'):
+            y=self.ds.get_label(idx)
+        else:
+            _,y=self.ds[idx]
         return y
 
     def __getitem__(self, idx):
