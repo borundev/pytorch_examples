@@ -30,9 +30,8 @@ class BoilerPlate(pl.LightningModule):
         loss_original = self.loss(outputs, y_original)
 
         self.log('train/loss', loss)
-        self.log('train/loss_original', loss_original, on_epoch=True)
-        self.log('train/accuracy_original', (preds == y_original.data).type(torch.float32).mean(),
-                 on_epoch=True)
+        self.log('train/loss_original', loss_original)
+        self.log('train/accuracy_original', (preds == y_original.data).type(torch.float32).mean())
 
         return loss
 
@@ -42,8 +41,8 @@ class BoilerPlate(pl.LightningModule):
         _, preds = torch.max(outputs, 1)
         loss = self.loss(outputs, y)
         accuracy=(preds == y.data).type(torch.float32).mean()
-        self.log('val/loss', loss,on_epoch=True)
-        self.log('val/accuracy', accuracy,on_epoch=True)
+        self.log('val/loss', loss)
+        self.log('val/accuracy', accuracy)
         return y.detach().clone().cpu(),outputs.detach().clone().cpu()
 
 
@@ -53,8 +52,8 @@ class BoilerPlate(pl.LightningModule):
         _, preds = torch.max(outputs, 1)
         loss = self.loss(outputs, y)
         accuracy=(preds == y.data).type(torch.float32).mean()
-        self.log('test/loss', loss,on_epoch=True)
-        self.log('test/accuracy', accuracy,on_epoch=True)
+        self.log('test/loss', loss)
+        self.log('test/accuracy', accuracy)
         return y.detach().clone().cpu(),outputs.detach().clone().cpu()
 
     def configure_optimizers(self):
