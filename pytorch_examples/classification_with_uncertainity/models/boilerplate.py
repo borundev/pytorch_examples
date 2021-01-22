@@ -29,14 +29,8 @@ class BoilerPlate(pl.LightningModule):
         loss = self.loss(outputs, y)
         loss_original = self.loss(outputs, y_original)
 
-        self.log('train/loss_step', loss)
-        self.log('train/loss', loss, on_epoch=True)
-
-        self.log('train/loss_original_step', loss_original)
+        self.log('train/loss', loss)
         self.log('train/loss_original', loss_original, on_epoch=True)
-
-        self.log('train/accuracy_original_step', (preds == y_original.data).type(
-            torch.float32).mean())
         self.log('train/accuracy_original', (preds == y_original.data).type(torch.float32).mean(),
                  on_epoch=True)
 
