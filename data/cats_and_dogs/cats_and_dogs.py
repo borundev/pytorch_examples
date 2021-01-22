@@ -49,6 +49,11 @@ class CatsAndDogsDataset(Dataset):
 
         return img, y
 
+    def get_label(self,idx):
+        filename = self.all_image_files[self.id_to_idx[idx]]
+        y = int(filename.name.islower())  # 1 is dog and 0 is cat
+        return y
+
 class CatsAndDogsDataModule(pl.LightningDataModule):
 
     def __init__(self, force_download=False):
