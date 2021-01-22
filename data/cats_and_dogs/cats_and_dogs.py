@@ -10,7 +10,7 @@ import os
 import requests
 from sklearn.model_selection import train_test_split
 
-from data.utils import MaintainRandomState
+from data.utils import MaintainRandomState, untar
 
 data_url="https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz"
 pytorch_data_dir=Path(os.environ.get('PYTORCH_DATA','.'))
