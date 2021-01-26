@@ -32,7 +32,7 @@ class GetExtraLabelsDataset(Dataset):
         extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
         z = np.concatenate([np.array([y]), extras]).astype(np.float32)
         y_modified = z.mean()
-        return x, y_modified, y
+        return x, y_modified
 
 
 def modify_data_module(dm,num_extras):
