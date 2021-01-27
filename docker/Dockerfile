@@ -14,5 +14,5 @@ COPY requirements.txt requirements.txt
 RUN conda env update -f environment.yml
 RUN pip install torchsummary
 RUN pip install plotly
-RUN pip install --upgrade wandb
 RUN pip install kaggle
+RUN pip install --upgrade wandb
