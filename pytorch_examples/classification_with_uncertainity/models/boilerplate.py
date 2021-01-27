@@ -23,15 +23,13 @@ class BoilerPlate(pl.LightningModule):
         return NotImplementedError()
 
     def training_step(self, batch, batch_idx):
-        x, y, y_original = batch
+        x, y = batch
         outputs = self(x)
         _, preds = torch.max(outputs, 1)
         loss = self.loss(outputs, y)
-        loss_original = self.loss(outputs, y_original)
 
         self.log('train/loss', loss)
-        self.log('train/loss_original', loss_original)
-        self.log('train/accuracy_original', (preds == y_original.data).type(torch.float32).mean())
+        self.log('train/accuracy_original', (preds == y).type(torch.float32).mean())
 
         return loss
 

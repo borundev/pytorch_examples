@@ -28,6 +28,6 @@ def run_with_mod(num_extras, name=None, max_epochs=5):
     wandb.finish()
 
 if  __name__=='__main__':
-    run_with_mod(2,max_epochs=1)
+    run_with_mod(2,max_epochs=10)
     #cdm = GetExtraLabelsDataModule(CatsAndDogsDataModule(), 4)
     #x,y
