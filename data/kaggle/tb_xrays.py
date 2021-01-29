@@ -43,7 +43,7 @@ class TBDataModule(pl.LightningDataModule):
                 transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                transforms.Lambda(lambda x: x.mean(0).unsqueeze(0).repeat((3, 1, 1)))
+                #transforms.Lambda(lambda x: x.mean(0).unsqueeze(0).repeat((3, 1, 1)))
             ])
         if val_transform is None:
             val_transform = transforms.Compose([
@@ -51,7 +51,7 @@ class TBDataModule(pl.LightningDataModule):
                 transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                transforms.Lambda(lambda x: x.mean(0).unsqueeze(0).repeat((3, 1, 1)))
+                #transforms.Lambda(lambda x: x.mean(0).unsqueeze(0).repeat((3, 1, 1)))
             ])
         self.transforms = {
             'train': train_transform,
@@ -87,13 +87,13 @@ class TBDataModule(pl.LightningDataModule):
         self.test_dataset = TBDataset(test_files,self.transforms['val'])
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=4, num_workers=8)
+        return DataLoader(self.train_dataset, shuffle=True, batch_size=64, num_workers=8)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False, batch_size=8, num_workers=8)
+        return DataLoader(self.val_dataset, shuffle=False, batch_size=64, num_workers=8)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, shuffle=False, batch_size=8, num_workers=8)
+        return DataLoader(self.test_dataset, shuffle=False, batch_size=64, num_workers=8)
 
 
 
