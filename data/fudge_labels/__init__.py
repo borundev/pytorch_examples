@@ -11,9 +11,10 @@ def get_extra_indices(idx, num_extra, size):
 
 class GetExtraLabelsDataset(Dataset):
 
-    def __init__(self,ds,num_extras=0):
+    def __init__(self,ds,num_extras=0,return_original=False):
         self.ds=ds
         self.num_extras=num_extras
+        self.return_original=return_original
 
     def __len__(self):
         return len(self.ds)
@@ -32,14 +33,17 @@ class GetExtraLabelsDataset(Dataset):
         extras = [float(self.get_label(idx_extra)) for idx_extra in id_extras]
         z = np.concatenate([np.array([y]), extras]).astype(np.float32)
         y_modified = z.mean()
-        return x, y_modified
+        if not self.return_original:
+            return x,y_modified
+        else:
+            return x, y_modified, y
 
 
-def modify_data_module(dm,num_extras):
+def modify_data_module(dm,num_extras,return_original=False):
     dm.old_setup = dm.setup
     def setup(self,stage=None):
         self.old_setup(stage)
-        self.train_dataset = GetExtraLabelsDataset(self.train_dataset, num_extras)
+        self.train_dataset = GetExtraLabelsDataset(self.train_dataset, num_extras, return_original)
     dm.setup=MethodType(setup,dm)
     return dm
 
