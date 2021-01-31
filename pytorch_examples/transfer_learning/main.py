@@ -6,7 +6,7 @@ from pytorch_lightning.loggers import WandbLogger
 from data.kaggle import TBDataModule
 from pytorch_examples.transfer_learning.model import CustomModel
 
-CustomModel.make_validation_epoch_end(['Normal', 'TB'])
+CustomModel.make_epoch_end_funcs(['Normal', 'TB'])
 
 wandb_logger = WandbLogger(project='transfer_learning',name='bourne')
 
