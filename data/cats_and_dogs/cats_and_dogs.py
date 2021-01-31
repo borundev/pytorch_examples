@@ -117,13 +117,13 @@ class CatsAndDogsDataModule(pl.LightningDataModule):
             self.test_dataset = CatsAndDogsDataset(self.test_idx, self.all_image_files,self.transforms['val'])
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=4, num_workers=8)
+        return DataLoader(self.train_dataset, shuffle=True, batch_size=64, num_workers=8)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False, batch_size=8, num_workers=8)
+        return DataLoader(self.val_dataset, shuffle=False, batch_size=64, num_workers=8)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset,shuffle=False, batch_size=8, num_workers=8)
+        return DataLoader(self.test_dataset,shuffle=False, batch_size=64, num_workers=8)
 
 if __name__ == '__main__':
     dm=CatsAndDogsDataModule()
