@@ -29,7 +29,9 @@ class BoilerPlate(pl.LightningModule):
         loss = self.loss(outputs, y)
         accuracy = (preds == y.data).type(torch.float32).mean()
         self.log('train/loss', loss, prog_bar=True)
-        self.log('train/accuracy', accuracy,prog_bar=True)
+        self.log('train/accuracy', accuracy, prog_bar=True)
+        self.log('global_step', self.global_step, prog_bar=False)
+        self.log('epoch', self.current_epoch, prog_bar=False)
 
         return loss
 
@@ -41,6 +43,8 @@ class BoilerPlate(pl.LightningModule):
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('val/loss', loss,prog_bar=True)
         self.log('val/accuracy', accuracy, prog_bar=True)
+        self.log('global_step', self.global_step, prog_bar=False)
+        self.log('epoch', self.current_epoch, prog_bar=False)
         return y,outputs
 
     def validation_epoch_end(self, outputs):
@@ -60,6 +64,8 @@ class BoilerPlate(pl.LightningModule):
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('test/loss', loss, prog_bar=True)
         self.log('test/accuracy', accuracy, prog_bar=True)
+        self.log('global_step', self.global_step, prog_bar=False)
+        self.log('epoch', self.current_epoch, prog_bar=False)
         return y,outputs
 
     def test_epoch_end(self, outputs):

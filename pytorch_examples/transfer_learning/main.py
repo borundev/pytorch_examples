@@ -19,38 +19,28 @@ dm = TBDataModule()
 dm.prepare_data()
 dm.setup()
 
-
-
-#path=dm.data_dir/'Dataset/'
-#print(path)
-#def is_tb(x):
-#  return 'tb' in x.lower()
-#from fastai.vision.all import *
-#dls = ImageDataLoaders.from_name_func(path, get_image_files(path), valid_pct=0.2,
-#        label_func=is_tb,item_tfms=Resize(224))
-#sys.exit(0)
-
-model.epochs=1
-model.steps_per_epoch=len(dm.train_dataloader())
-model.freeze()
+model.steps_per_epoch = len(dm.train_dataloader())
 
 freeze_max_epochs = 1
-unfreeze_max_epochs = 1
+unfreeze_max_epochs = 5
+
+model.epochs = freeze_max_epochs
+model.freeze()
 
 trainer = pl.Trainer(
     gpus=0,
     max_epochs=freeze_max_epochs,
-    logger=wandb_logger,
+    logger=wandb_logger
 )
 trainer.fit(model, dm)
 
-
-
+model.epochs = unfreeze_max_epochs
 model.unfreeze()
+
 trainer = pl.Trainer(
     gpus=0,
-    max_epochs=freeze_max_epochs+unfreeze_max_epochs,
-    logger=wandb_logger,
+    max_epochs=freeze_max_epochs + unfreeze_max_epochs,
+    logger=wandb_logger
 )
 trainer.current_epoch = freeze_max_epochs
 trainer.global_step = model.steps_per_epoch * freeze_max_epochs

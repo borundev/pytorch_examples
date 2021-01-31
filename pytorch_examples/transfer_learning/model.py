@@ -62,12 +62,12 @@ class CustomModel(BoilerPlate):
     def freeze(self):
         for n, l in list(self.model.named_children())[:-1]:
             getattr(self.model, n).requires_grad_(False)
-        self.opt = self.make_transfer_optimizer()
+        self.configure_optimizers = self.make_transfer_optimizer
 
     def unfreeze(self):
         for n, l in list(self.model.named_children())[:-1]:
             getattr(self.model, n).requires_grad_(True)
-        self.opt = self.make_optimizer()
+        self.configure_optimizers = self.make_optimizer
 
     @staticmethod
     def make_lrs(lr,n,div=100):
@@ -121,6 +121,4 @@ class CustomModel(BoilerPlate):
         }
         return [optimizer],[scheduler]
 
-    def configure_optimizers(self):
-        return self.opt
 
