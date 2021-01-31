@@ -24,28 +24,27 @@ class BoilerPlate(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        outputs = self(x)
-        _, preds = torch.max(outputs, 1)
-        loss = self.loss(outputs, y)
+        score = self(x)
+        _, preds = torch.max(score, 1)
+        loss = self.loss(score, y)
         accuracy = (preds == y.data).type(torch.float32).mean()
         self.log('train/loss', loss, prog_bar=True)
         self.log('train/accuracy', accuracy, prog_bar=True)
         self.log('global_step', self.global_step, prog_bar=False)
         self.log('epoch', self.current_epoch, prog_bar=False)
-
-        return loss
+        return {'loss':loss, 'y':y.detach().clone().cpu(), 'score':score.detach().clone().cpu()}
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        outputs = self(x)
-        _, preds = torch.max(outputs, 1)
-        loss = self.loss(outputs, y)
+        score = self(x)
+        _, preds = torch.max(score, 1)
+        loss = self.loss(score, y)
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('val/loss', loss,prog_bar=True)
         self.log('val/accuracy', accuracy, prog_bar=True)
         self.log('global_step', self.global_step, prog_bar=False)
         self.log('epoch', self.current_epoch, prog_bar=False)
-        return y,outputs
+        return y.detach().clone().cpu(),score.detach().clone().cpu()
 
     def validation_epoch_end(self, outputs):
 
@@ -58,15 +57,15 @@ class BoilerPlate(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        outputs = self(x)
-        _, preds = torch.max(outputs, 1)
-        loss = self.loss(outputs, y)
+        score = self(x)
+        _, preds = torch.max(score, 1)
+        loss = self.loss(score, y)
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('test/loss', loss, prog_bar=True)
         self.log('test/accuracy', accuracy, prog_bar=True)
         self.log('global_step', self.global_step, prog_bar=False)
         self.log('epoch', self.current_epoch, prog_bar=False)
-        return y,outputs
+        return y.detach().clone().cpu(),score.detach().clone().cpu()
 
     def test_epoch_end(self, outputs):
 
@@ -81,18 +80,45 @@ class BoilerPlate(pl.LightningModule):
         NotImplementedError
 
     @classmethod
-    def make_validation_epoch_end(cls,labels):
-        def func(self, outputs):
+    def make_epoch_end_funcs(cls, labels):
+
+        def func_train(self, outputs):
+            ground_truths=[o['y'] for o in outputs]
+            predictions = [o['score'] for o in outputs]
+            predictions = torch.nn.Softmax(1)(torch.cat(predictions)).cpu().numpy()
+            ground_truths = torch.cat(ground_truths).cpu().numpy().astype(np.int)
+
+            self.log("train/pr", wandb.plot.pr_curve(ground_truths, predictions,
+                                               labels=labels))
+            self.log("train/roc", wandb.plot.roc_curve(ground_truths, predictions,
+                                                 labels=labels))
+            self.log('train/confusion_matrix', wandb.plot.confusion_matrix(predictions,
+                                                                     ground_truths, class_names=labels))
+        def func_val(self, outputs):
+
             ground_truths, predictions = zip(*outputs)
             predictions = torch.nn.Softmax(1)(torch.cat(predictions)).cpu().numpy()
             ground_truths = torch.cat(ground_truths).cpu().numpy().astype(np.int)
 
-            self.log("pr", wandb.plot.pr_curve(ground_truths, predictions,
+            self.log("val/pr", wandb.plot.pr_curve(ground_truths, predictions,
                                                labels=labels))
-            self.log("roc", wandb.plot.roc_curve(ground_truths, predictions,
+            self.log("val/roc", wandb.plot.roc_curve(ground_truths, predictions,
                                                  labels=labels))
-            self.log('confusion_matrix', wandb.plot.confusion_matrix(predictions,
+            self.log('val/confusion_matrix', wandb.plot.confusion_matrix(predictions,
                                                                      ground_truths, class_names=labels))
 
-        cls.validation_epoch_end=func
-        cls.test_epoch_end = func
+        def func_test(self, outputs):
+            ground_truths, predictions = zip(*outputs)
+            predictions = torch.nn.Softmax(1)(torch.cat(predictions)).cpu().numpy()
+            ground_truths = torch.cat(ground_truths).cpu().numpy().astype(np.int)
+
+            self.log("test/pr", wandb.plot.pr_curve(ground_truths, predictions,
+                                               labels=labels))
+            self.log("test/roc", wandb.plot.roc_curve(ground_truths, predictions,
+                                                 labels=labels))
+            self.log('test/confusion_matrix', wandb.plot.confusion_matrix(predictions,
+                                                                     ground_truths, class_names=labels))
+
+        #cls.training_epoch_end= func_train
+        cls.validation_epoch_end=func_val
+        cls.test_epoch_end = func_test
