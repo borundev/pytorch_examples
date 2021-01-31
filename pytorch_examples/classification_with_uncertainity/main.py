@@ -1,4 +1,5 @@
 import os
+import sys
 
 import names
 import pytorch_lightning as pl
@@ -9,7 +10,7 @@ from data.fudge_labels import modify_data_module
 from data.kaggle import TBDataModule
 from pytorch_examples.transfer_learning.model import CustomModel
 
-CustomModel.make_validation_epoch_end(['Normal', 'TB'])
+CustomModel.make_epoch_end_funcs(['Normal', 'TB'])
 
 
 if 'KAGGLE_USERNAME' not in os.environ:
@@ -31,7 +32,7 @@ def run_with_mod(num_extras, name=None):
     model.steps_per_epoch = len(dm.train_dataloader())
 
     freeze_max_epochs = 1
-    unfreeze_max_epochs = 5
+    unfreeze_max_epochs = 3
 
     model.epochs = freeze_max_epochs
 
@@ -60,6 +61,6 @@ def run_with_mod(num_extras, name=None):
     wandb.finish()
 
 if  __name__=='__main__':
-    for num_extras in (0,1,2,5,15):
+    for num_extras in (0,1,2,4,5,30,100,500,):
         run_with_mod(num_extras)
 
