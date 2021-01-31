@@ -82,32 +82,45 @@ class CustomModel(BoilerPlate):
     def set_steps_per_epoch(self,steps_per_epoch):
         self.steps_per_epoch=steps_per_epoch
 
+
     def make_transfer_optimizer(self):
-        optimizer = optim.AdamW(params(self.model[:3], self.model[3:5], self.model[5]))
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
-                                                        max_lr=self.make_lrs(self.lr/2,3),
+        optimizer = optim.AdamW(params(self.model[:3], self.model[3:5], self.model[5]),eps=1e-5,betas=(0.9,0.99))
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=self.make_lrs(self.lr,3),
                                                         # max_momentum=[.9,.7,.4],
                                                         # base_momentum=[.1,.2,.1],
                                                         epochs=self.epochs,
                                                         steps_per_epoch=self.steps_per_epoch,
                                                         anneal_strategy='cos',
                                                         pct_start=.99,
+                                                        div_factor=25.0,
+                                                        final_div_factor=100000.0/25.0,
                                                         )
+        scheduler = {
+            'scheduler': scheduler,
+            'interval': 'step',
+            'frequency': 1
+        }
         return [optimizer],[scheduler]
 
     def make_optimizer(self):
-        optimizer = optim.AdamW(params(self.model[5]))
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
-                                                        max_lr=self.make_lrs(self.lr,1),
+        optimizer = optim.AdamW(params(self.model[:3], self.model[3:5], self.model[5]),eps=1e-5,betas=(0.9,0.99))
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=self.make_lrs(self.lr/2,3),
                                                         # max_momentum=[.9,.7,.4],
                                                         # base_momentum=[.1,.2,.1],
                                                         epochs=self.epochs,
                                                         steps_per_epoch=self.steps_per_epoch,
-                                                        anneal_strategy='cos'
+                                                        anneal_strategy='cos',
+                                                        pct_start=.3,
+                                                        div_factor=5.0,
+                                                        final_div_factor=100000.0/5.0,
                                                         )
+        scheduler = {
+            'scheduler': scheduler,
+            'interval': 'step', # or 'epoch'
+            'frequency': 1
+        }
         return [optimizer],[scheduler]
 
     def configure_optimizers(self):
-        print('configure optimizer called')
         return self.opt
 

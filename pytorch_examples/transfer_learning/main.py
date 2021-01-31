@@ -8,7 +8,7 @@ from pytorch_examples.transfer_learning.model import CustomModel
 
 CustomModel.make_validation_epoch_end(['Normal', 'TB'])
 
-wandb_logger = WandbLogger(project='transfer_learning')
+wandb_logger = WandbLogger(project='transfer_learning',name='bourne')
 
 
 model = CustomModel()
@@ -44,10 +44,14 @@ trainer = pl.Trainer(
 )
 trainer.fit(model, dm)
 
+
+
 model.unfreeze()
 trainer = pl.Trainer(
     gpus=0,
-    max_epochs=unfreeze_max_epochs,
+    max_epochs=freeze_max_epochs+unfreeze_max_epochs,
     logger=wandb_logger,
 )
+trainer.current_epoch = freeze_max_epochs
+trainer.global_step = model.steps_per_epoch * freeze_max_epochs
 trainer.fit(model, dm)

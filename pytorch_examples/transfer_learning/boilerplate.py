@@ -60,6 +60,16 @@ class BoilerPlate(pl.LightningModule):
         accuracy=(preds == y.data).type(torch.float32).mean()
         self.log('test/loss', loss, prog_bar=True)
         self.log('test/accuracy', accuracy, prog_bar=True)
+        return y,outputs
+
+    def test_epoch_end(self, outputs):
+
+        ground_truths, predictions = zip(*outputs)
+        predictions=torch.nn.Softmax(1)(torch.cat(predictions)).cpu()
+        ground_truths=torch.cat(ground_truths).cpu()
+        _,preds = torch.max(predictions,1)
+        accuracy=(preds == ground_truths).type(torch.float32).mean()
+        print(accuracy)
 
     def configure_optimizers(self):
         NotImplementedError
