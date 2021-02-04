@@ -9,6 +9,7 @@ from torchvision.transforms import transforms
 import os
 import numpy as np
 
+from data.kaggle import KaggleDataModule
 from data.utils import MaintainRandomState
 
 
@@ -33,10 +34,12 @@ class TBDataset(Dataset):
         return 0 if fname.parent.name == 'Normal' else 1
 
 
-class TBDataModule(pl.LightningDataModule):
+class TBDataModule(KaggleDataModule):
 
     def __init__(self, kaggle_username=None, kaggle_key=None, train_transform=None, val_transform=None):
-        super().__init__()
+        super().__init__(kaggle_dataset='tawsifurrahman/tuberculosis-tb-chest-xray-dataset',
+                         kaggle_username=kaggle_username,
+                         kaggle_key=kaggle_key)
         if train_transform is None:
             train_transform = transforms.Compose([
                 transforms.Resize(256),
@@ -57,22 +60,7 @@ class TBDataModule(pl.LightningDataModule):
             'train': train_transform,
             'val': val_transform,
         }
-        self.kaggle_username = kaggle_username
-        self.kaggle_key = kaggle_key
-        self.data_dir = Path(os.environ.get('PYTORCH_DATA', '.')) / 'kaggle/tuberculosis-tb-chest-xray-dataset'
-        if not self.data_dir.exists() and self.kaggle_username is None and 'KAGGLE_USERNAME' not in os.environ:
-            raise Exception('Please provide Kaggle credentials')
 
-    def prepare_data(self):
-        if not self.data_dir.exists():
-            if self.kaggle_username is not None:
-                os.environ['KAGGLE_USERNAME'] = self.kaggle_username
-            if self.kaggle_key is not None:
-                os.environ['KAGGLE_KEY'] = self.kaggle_key
-            cmd = "kaggle datasets download -p {path} --unzip tawsifurrahman/tuberculosis-tb-chest-xray-dataset".format(
-                path=self.data_dir)
-
-            os.system(cmd)
 
     def setup(self, stage=None):
         files = list(self.data_dir.rglob('*.jpg')) + list(self.data_dir.rglob('*.png'))

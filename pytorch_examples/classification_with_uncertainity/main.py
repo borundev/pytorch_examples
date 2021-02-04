@@ -7,10 +7,11 @@ import wandb
 from pytorch_lightning.loggers import WandbLogger
 
 from data.fudge_labels import modify_data_module
-from data.kaggle import TBDataModule
+from data.kaggle.tb_xrays import TBDataModule
 from pytorch_examples.transfer_learning.model import CustomModel
+from utils.wandb.binary_classification import make_validation_epoch_end
 
-CustomModel.make_epoch_end_funcs(['Normal', 'TB'])
+CustomModel.validation_epoch_end=make_validation_epoch_end(pos_label='Tuberculosis',neg_label='Healthy')
 
 
 if 'KAGGLE_USERNAME' not in os.environ:
@@ -22,7 +23,7 @@ def run_with_mod(num_extras, name=None):
     #pl.seed_everything(42)
     name = '{}_{}'.format(num_extras, '_'.join(names.get_full_name().split()))
     wandb_logger = WandbLogger(name=name,
-                               project='uncertain_classification_transfer_learning')
+                               project='tmp')
 
     model = CustomModel()
     dm = modify_data_module(TBDataModule(),num_extras)
@@ -61,6 +62,6 @@ def run_with_mod(num_extras, name=None):
     wandb.finish()
 
 if  __name__=='__main__':
-    for num_extras in (0,1,2,4,5,30,100,500,):
+    for num_extras in (0,1,30,):
         run_with_mod(num_extras)
 
