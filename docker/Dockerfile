@@ -17,3 +17,4 @@ RUN pip install plotly
 RUN pip install kaggle
 RUN pip install --upgrade wandb
 RUN pip install fastai
+RUN pip install names
