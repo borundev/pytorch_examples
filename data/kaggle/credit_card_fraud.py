@@ -5,6 +5,7 @@ import os
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
+import torch
 import pandas as pd
 import numpy as np
 
@@ -77,13 +78,13 @@ class CreditCardFraudDataModule(KaggleDataModule):
         self.val_dataset = list(zip(X_val, y_val))
         self.test_dataset = list(zip(X_test,y_test))
 
-        self.pos_frac = np.mean([self.train_dataset[i][1] for i in range(len(self.train_dataset))])
+        self.pos_frac = torch.tensor([self.train_dataset[i][1] for i in range(len(self.train_dataset))]).type(torch.float).mean()
 
     def get_class_weights(self):
-        return 2.0/np.array([1-self.pos_frac,self.pos_frac])
+        return 2.0/torch.tensor([1-self.pos_frac,self.pos_frac])
 
     def get_initial_bias_positive(self):
-        return np.log(self.pos_frac / (1 - self.pos_frac))
+        return torch.log(self.pos_frac / (1 - self.pos_frac))
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, shuffle=True, batch_size=2048, num_workers=8)

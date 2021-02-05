@@ -1,5 +1,4 @@
 import os
-import sys
 
 import names
 import pytorch_lightning as pl
@@ -45,7 +44,8 @@ def run_with_mod(num_extras, name=None):
         logger=wandb_logger
     )
     trainer.fit(model, dm)
-
+    global_step = trainer.global_step
+    current_epoch = trainer.current_epoch
 
     model.epochs=unfreeze_max_epochs
     model.unfreeze()
@@ -55,13 +55,13 @@ def run_with_mod(num_extras, name=None):
         max_epochs=freeze_max_epochs + unfreeze_max_epochs,
         logger=wandb_logger
     )
-    trainer.current_epoch = freeze_max_epochs
-    trainer.global_step = model.steps_per_epoch * freeze_max_epochs
+    trainer.current_epoch = current_epoch + 1
+    trainer.global_step = global_step + 1
     trainer.fit(model, dm)
 
     wandb.finish()
 
 if  __name__=='__main__':
-    for num_extras in (0,1,30,):
+    for num_extras in (5,30,):
         run_with_mod(num_extras)
 

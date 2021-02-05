@@ -1,18 +1,13 @@
-import sys
-
 import pytorch_lightning as pl
 import torch
-import wandb
 from pytorch_lightning.loggers import WandbLogger
-from sklearn.metrics import precision_recall_curve, roc_curve, average_precision_score, roc_auc_score
 from torch import nn
-import numpy as np
-import matplotlib.pyplot as plt
 
 from data.kaggle.credit_card_fraud import CreditCardFraudDataModule
-from pytorch_examples.transfer_learning.boilerplate import BoilerPlate
+from pytorch_examples.boilerplate.classification_boilerplate import BoilerPlate
 from utils.wandb.binary_classification import make_validation_epoch_end
-
+import torch.nn.functional as F
+import numpy as np
 
 class FinalLinear(nn.Linear):
 
@@ -36,7 +31,7 @@ class Model(BoilerPlate):
                                    )
         if class_weights is None:
             class_weights = [1.,1.]
-        self.class_weights = torch.tensor([class_weights])
+        self.class_weights = class_weights
 
     def loss(self,inp, y):
         """
@@ -45,9 +40,8 @@ class Model(BoilerPlate):
         :param y:
         :return:
         """
-        lsm = nn.LogSoftmax(1)
-        yp = torch.stack([1 - y, y], 1)*self.class_weights
-        return -torch.mean(torch.sum(yp * lsm(inp), 1))
+
+        return F.cross_entropy(inp,y,self.class_weights)
 
     def training_step(self, batch, batch_idx):
         loss=super().training_step(batch,batch_idx)
@@ -70,13 +64,14 @@ if __name__ == '__main__':
     pos_bias=dm.get_initial_bias_positive()
     class_weights = dm.get_class_weights()
 
-    model=Model(dm.num_features,class_weights=class_weights)
-    wandb_logger = WandbLogger(project='credit_card_fraud',name='class_weights')
+    pl.seed_everything(42)
+    model=Model(dm.num_features,initial_bias_positive=pos_bias, class_weights=class_weights)
+    wandb_logger = WandbLogger(project='credit_card_fraud',name='initial_bias_class_weights2')
 
     trainer = pl.Trainer(
         gpus=0,
         max_epochs=100,
-        logger=wandb_logger
+        logger=wandb_logger,
     )
     trainer.fit(model, dm)
 

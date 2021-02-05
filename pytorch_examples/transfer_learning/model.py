@@ -1,9 +1,9 @@
 import torch
-from torchvision.models import resnet34, resnet18
+from torchvision.models import resnet34
 from torch import nn, optim
 import numpy as np
 
-from pytorch_examples.transfer_learning.boilerplate import BoilerPlate
+from pytorch_examples.boilerplate.classification_boilerplate import BoilerPlate
 
 class AdaptiveConcatPool2d(nn.Module):
     def __init__(self, sz=None):

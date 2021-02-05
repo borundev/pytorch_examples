@@ -1,23 +1,13 @@
 import pytorch_lightning as pl
 import torch
-from torch import nn
-import wandb
-import numpy as np
+from torch.nn import functional as F
+
 
 class BoilerPlate(pl.LightningModule):
 
-
     @staticmethod
     def loss(inp, y):
-        """
-        Since pytorch doesn't have a one-hot version of cross entropy we implement it here
-        :param inp:
-        :param y:
-        :return:
-        """
-        lsm = nn.LogSoftmax(1)
-        yp = torch.stack([1 - y, y], 1)
-        return -torch.mean(torch.sum(yp * lsm(inp), 1))
+        return F.cross_entropy(inp,y)
 
     def forward(self, x):
         return self.model(x)
