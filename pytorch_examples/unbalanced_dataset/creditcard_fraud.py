@@ -7,7 +7,6 @@ from data.kaggle.credit_card_fraud import CreditCardFraudDataModule
 from pytorch_examples.boilerplate.classification_boilerplate import BoilerPlate
 from utils.wandb.binary_classification import make_validation_epoch_end
 import torch.nn.functional as F
-import numpy as np
 
 class FinalLinear(nn.Linear):
 
@@ -30,7 +29,7 @@ class Model(BoilerPlate):
                                    FinalLinear(initial_bias_positive,16),
                                    )
         if class_weights is None:
-            class_weights = [1.,1.]
+            class_weights = torch.tensor([1.,1.])
         self.class_weights = class_weights
 
     def loss(self,inp, y):
@@ -65,8 +64,8 @@ if __name__ == '__main__':
     class_weights = dm.get_class_weights()
 
     pl.seed_everything(42)
-    model=Model(dm.num_features,initial_bias_positive=pos_bias, class_weights=class_weights)
-    wandb_logger = WandbLogger(project='credit_card_fraud',name='initial_bias_class_weights2')
+    model=Model(dm.num_features)#,initial_bias_positive=pos_bias, class_weights=class_weights)
+    wandb_logger = WandbLogger(project='credit_card_fraud',name='default')
 
     trainer = pl.Trainer(
         gpus=0,
