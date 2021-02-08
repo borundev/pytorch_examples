@@ -13,8 +13,8 @@ from pytorch_lightning.loggers import WandbLogger
 
 from pytorch_examples.gan.data.celeba import CelebaDataModule
 from pytorch_examples.gan.models.discriminator import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
+from pytorch_examples.gan.models.gan.gan import GAN
 from pytorch_examples.gan.models.generator import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
-from models.gan import GAN
 
 
 data = 'CIFAR'
