@@ -4,3 +4,8 @@ sklearn
 pandas
 seaborn
 pytorch-lightning-bolts
+torchsummary
+plotly
+kaggle
+fastai
+names
