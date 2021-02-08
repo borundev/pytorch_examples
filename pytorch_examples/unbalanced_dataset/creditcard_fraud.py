@@ -2,7 +2,6 @@ import pytorch_lightning as pl
 import torch
 from pytorch_lightning.loggers import WandbLogger
 from torch import nn
-
 from data.kaggle.credit_card_fraud import CreditCardFraudDataModule
 from pytorch_examples.boilerplate.classification_boilerplate import BoilerPlate
 from utils.wandb.binary_classification import make_validation_epoch_end
@@ -61,11 +60,11 @@ if __name__ == '__main__':
     dm.prepare_data()
     dm.setup()
     pos_bias=dm.get_initial_bias_positive()
-    class_weights = dm.get_class_weights()
+    class_weights = dm.get_class_weights(beta=.5)
 
     pl.seed_everything(42)
-    model=Model(dm.num_features)#,initial_bias_positive=pos_bias, class_weights=class_weights)
-    wandb_logger = WandbLogger(project='credit_card_fraud',name='default')
+    model=Model(dm.num_features,initial_bias_positive=pos_bias,class_weights=class_weights)
+    wandb_logger = WandbLogger(project='credit_card_fraud',name='initial_bias-cw.5')
 
     trainer = pl.Trainer(
         gpus=0,
