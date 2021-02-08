@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 import torch
 import pandas as pd
 import numpy as np
+from collections import Counter
 
 from data.kaggle import KaggleDataModule
 
@@ -78,10 +79,19 @@ class CreditCardFraudDataModule(KaggleDataModule):
         self.val_dataset = list(zip(X_val, y_val))
         self.test_dataset = list(zip(X_test,y_test))
 
-        self.pos_frac = torch.tensor([self.train_dataset[i][1] for i in range(len(self.train_dataset))]).type(torch.float).mean()
+        self.counts=Counter([self.train_dataset[i][1] for i in range(len(self.train_dataset))])
+        self.pos_frac = torch.tensor(1.*self.counts[1]/len(self.train_dataset))
 
-    def get_class_weights(self):
-        return 2.0/torch.tensor([1-self.pos_frac,self.pos_frac])
+
+    def get_class_weights(self,beta=1.):
+        # Based on https://arxiv.org/abs/1901.05555
+        n0, n1=self.counts[0],self.counts[1]
+        t=n0+n1
+        eff_n0 = (1-beta**n0) / (1-beta) if beta<1 else n0
+        eff_n1 = (1 - beta**n1) / (1 - beta) if beta < 1 else n1
+        k=t/(n0/eff_n0+n1/eff_n1)
+        w=torch.tensor([eff_n0,eff_n1])
+        return k/w
 
     def get_initial_bias_positive(self):
         return torch.log(self.pos_frac / (1 - self.pos_frac))
@@ -144,9 +154,10 @@ def undersample(x,y):
     return x,y
 
 if __name__=='__main__':
-    dm=CreditCardFraudDataModule(oversample=True,undersample=False)
-    dm.prepare_data()
+    dm=CreditCardFraudDataModule()
     dm.setup()
     print(len(dm.train_dataset))
+    c=Counter([dm.train_dataset[i][1] for i in range(len(dm.train_dataset))])
+    print(c)
     #print(next(iter(dm.train_dataloader())))
     #print(np.mean([dm.train_dataset[i] for i in range(len(dm.train_dataset))]))
