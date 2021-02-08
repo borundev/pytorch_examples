@@ -2,6 +2,7 @@ import os
 
 import names
 import pytorch_lightning as pl
+import torch
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 
@@ -10,8 +11,16 @@ from data.kaggle.tb_xrays import TBDataModule
 from pytorch_examples.transfer_learning.model import CustomModel
 from utils.wandb.binary_classification import make_validation_epoch_end
 
+from torch import nn
+
 CustomModel.validation_epoch_end=make_validation_epoch_end(pos_label='Tuberculosis',neg_label='Healthy')
 
+def loss(inp, y):
+    lsm = nn.LogSoftmax(1)
+    yp = torch.stack([1 - y, y], 1)
+    return -torch.mean(torch.sum(yp * lsm(inp), 1))
+
+CustomModel.loss=staticmethod(loss)
 
 if 'KAGGLE_USERNAME' not in os.environ:
     os.environ['KAGGLE_USERNAME'] = input('Username: ')

@@ -11,13 +11,13 @@ from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
-from pytorch_examples.gan.data.celeba import CelebaDataModule
+from data.celeba import CelebaDataModule
 from pytorch_examples.gan.models.discriminator import DiscriminatorFF, DiscriminatorDCGAN, DiscriminatorDCGAN_CELEBA
 from pytorch_examples.gan.models.gan.gan import GAN
 from pytorch_examples.gan.models.generator import GeneratorFF, GeneratorDCGAN, GeneratorDCGAN_CELEBA
 
 
-data = 'CIFAR'
+data = 'CELEBA'
 Generator = Discriminator = DataModule = None
 path_pytorch_data = Path(os.environ.get('PYTORCH_DATA', ''))
 path_pytorch_models = Path(os.environ.get('PYTORCH_MODELS', ''))
@@ -44,7 +44,7 @@ generator = Generator(latent_dim=latent_dim, img_shape=img_shape)
 discriminator = Discriminator(img_shape=img_shape)
 model = GAN(*dm.size(), latent_dim=latent_dim, generator=generator, discriminator=discriminator)
 
-logger = WandbLogger(project='gan_cifar_2')
+logger = WandbLogger(project='gan_celeba_2')
 
 dm.prepare_data()
 dm.setup()
@@ -64,7 +64,7 @@ else:
     device = 'cpu'
     gpus = 0
 
-checkpoint_path = path_pytorch_models / 'gan_mnist/'
+checkpoint_path = path_pytorch_models / 'gan_celeba/'
 checkpoint_path.mkdir(parents=True, exist_ok=True)
 
 checkpoint_callback = ModelCheckpoint(
@@ -79,5 +79,6 @@ trainer = pl.Trainer(gpus=gpus,
                      max_epochs=25,
                      logger=logger,
                      checkpoint_callback=checkpoint_callback,
+                     limit_train_batches=2
                      )
 trainer.fit(model, dm)

@@ -1,13 +1,16 @@
+import sklearn
 import torch
 import torch.nn.functional as F
 import torchvision
-from sklearn.metrics import precision_recall_curve, roc_curve
+from sklearn.metrics import average_precision_score, roc_auc_score
 import matplotlib.pyplot as plt
 import pytorch_lightning as pl
 import wandb
 import torchsummary
 import os, psutil
 import numpy as np
+
+from utils.wandb.binary_classification import pr_curve, roc_curve, confusion_matrix
 
 
 class GAN(pl.LightningModule):
@@ -126,72 +129,33 @@ class GAN(pl.LightningModule):
             discriminator_score.append(output['y_score'])
         discriminator_score = torch.cat(discriminator_score)
         discriminator_y = torch.cat(discriminator_y)
-        discriminator_score = torch.cat([1 - discriminator_score, discriminator_score], 1)
+
 
         y_true = discriminator_y.flatten().cpu().numpy()
-        y_score = discriminator_score.cpu().numpy()
+        y_score = discriminator_score.flatten().cpu().numpy()
+        pred = (y_score > 0.5).astype(np.int)
 
-        #self.log("discriminator/discriminator_pr", wandb.plot.pr_curve(y_true, y_score, labels=['Fake', 'Real']))
-        #self.log("discriminator/discriminator_roc", wandb.plot.roc_curve(y_true, y_score, labels=['Fake', 'Real']))
-        self.log('discriminator/discriminator_confusion_matrix', wandb.plot.confusion_matrix(y_score,
-                                                                                             y_true,
-                                                                                             class_names=['Fake',
-                                                                                                          'Real']))
+        neg_label,pos_label='Fake','Real'
 
-        p, r, t = precision_recall_curve(1-y_true, y_score[:, 0])
-        fig=plt.figure(figsize=(10,5))
-        ax=fig.add_subplot(1,1,1)
-        ax.plot(r,p,label='Fake')
-        p, r, t = precision_recall_curve(y_true, y_score[:, 1])
-        ax.plot(r,p, label='Real')
-        ax.set_xlim(0,1)
-        ax.set_ylim(0,1)
-        ax.set_xlabel('Recall')
-        ax.set_ylabel('Precision')
-        ax.grid(True)
-        ax.legend()
-        self.log('discriminator/pr_curve',wandb.Image(plt,caption='Epoch: {}'.format(self.current_epoch)))
-        plt.tight_layout()
-        plt.close()
 
-        # self.log_pr_and_roc(y_score,y_true)
+        aps_0 = average_precision_score(1-discriminator_y, 1-discriminator_score)
+        aps_1 = average_precision_score(discriminator_y, discriminator_score)
+        auc_0 = roc_auc_score(1-discriminator_y, 1-discriminator_score)
+        auc_1 = roc_auc_score(discriminator_y, discriminator_score)
 
-    def log_pr_and_roc(self, val_predictions, ground_truth_class_ids, subsample_every_n=0):
-        # store a dictionary of metrics for each class
-        p = {}  # precision
-        r = {}  # recall
-        fpr = {}  # false positive rate
-        tpr = {}  # true positive rate
-        class_names=['Fake','True']
-        for i, clade in enumerate(class_names):
-            # log metrics for each class since we're training a multi-class model
-            p[i], r[i], _ = precision_recall_curve(np.where(ground_truth_class_ids == i, 1, 0),
-                                                   val_predictions[:, i])
-            fpr[i], tpr[i], _ = roc_curve(np.where(ground_truth_class_ids == i, 1, 0),
-                                          val_predictions[:, i])
+        self.log('val/avg_precision_{}'.format(neg_label),aps_0)
+        self.log('val/avg_precision_{}'.format(pos_label), aps_1)
+        self.log('val/roc_auc_{}'.format(neg_label), auc_0)
+        self.log('val/roc_auc_{}'.format(pos_label), auc_1)
 
-        # flatten these dictionaries so we can log a single wandb.Table
-        # for each plot type, storing the class name alongside its entries
-        pr_data = []
-        roc_data = []
-        for i, clade in enumerate(class_names):
-            for j, pr_val in enumerate(p[i]):
-                pr_data.append([p[i][j], r[i][j], class_names[i],self.current_epoch])
-            for k, roc_val in enumerate(fpr[i]):
-                roc_data.append([fpr[i][k], tpr[i][k], class_names[i],self.current_epoch])
+        ax = confusion_matrix(y_true,pred,pos_label,neg_label)
+        self.log('CM', wandb.Image(ax))
 
-        if subsample_every_n:
-            # subsample the entries
-            pr_sub = np.asarray(pr_data, dtype=np.float32)
-            pr_data = pr_sub[0::subsample_every_n].tolist()
-            roc_sub = np.asarray(roc_data, dtype=np.float32)
-            roc_data = roc_sub[0::subsample_every_n].tolist()
+        ax=pr_curve(discriminator_y,discriminator_score,pos_label,neg_label)
+        self.log('PR', wandb.Image(ax))
 
-        # log tables to wandb
-        wandb.log({"pr_data": wandb.Table(data=pr_data,
-                                           columns=["p", "r", "c","epoch"])})
-        wandb.log({"roc_data": wandb.Table(data=roc_data,
-                                            columns=["fpr", "tpr", "c","epoch"])})
+        ax=roc_curve(discriminator_y,discriminator_score,pos_label,neg_label)
+        self.log('ROC', wandb.Image(ax))
 
     def configure_optimizers(self):
         lr = self.hparams.lr
