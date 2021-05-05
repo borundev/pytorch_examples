@@ -8,6 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import transforms
 import os
 import numpy as np
+import multiprocessing
+
 
 from data.kaggle import KaggleDataModule
 from data.utils import MaintainRandomState
@@ -75,13 +77,13 @@ class TBDataModule(KaggleDataModule):
         self.test_dataset = TBDataset(test_files,self.transforms['val'])
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=64, num_workers=8)
+        return DataLoader(self.train_dataset, shuffle=True, batch_size=64, num_workers=multiprocessing.cpu_count())
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False, batch_size=64, num_workers=8)
+        return DataLoader(self.val_dataset, shuffle=False, batch_size=64, num_workers=multiprocessing.cpu_count())
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, shuffle=False, batch_size=64, num_workers=8)
+        return DataLoader(self.test_dataset, shuffle=False, batch_size=64, num_workers=multiprocessing.cpu_count())
 
 
 
