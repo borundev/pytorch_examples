@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     pl.seed_everything(42)
     model=Model(dm.num_features,initial_bias_positive=pos_bias,class_weights=class_weights)
-    wandb_logger = WandbLogger(project='credit_card_fraud',name='initial_bias-cw.5')
+    wandb_logger = WandbLogger(project='tmp',name='initial_bias-cw.5')
 
     trainer = pl.Trainer(
         gpus=0,

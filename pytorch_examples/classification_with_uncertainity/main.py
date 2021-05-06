@@ -31,7 +31,7 @@ def run_with_mod(num_extras, name=None):
     #pl.seed_everything(42)
     name = '{}_{}'.format(num_extras, '_'.join(names.get_full_name().split()))
     wandb_logger = WandbLogger(name=name,
-                               project='tmp')
+                               project='Classification_With_Uncertainity')
 
     model = CustomModel()
     dm = modify_data_module(TBDataModule(),num_extras)
@@ -71,6 +71,6 @@ def run_with_mod(num_extras, name=None):
     wandb.finish()
 
 if  __name__=='__main__':
-    for num_extras in (5,30,):
+    for num_extras in range(11):
         run_with_mod(num_extras)
 
