@@ -7,7 +7,7 @@ class BoilerPlate(pl.LightningModule):
 
     @staticmethod
     def loss(inp, y):
-        return F.cross_entropy(inp,y)
+        return F.cross_entropy(inp,y.long())
 
     def forward(self, x):
         return self.model(x)
