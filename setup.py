@@ -19,6 +19,7 @@ setup(name='pytorch_examples',
                         'torchvision',
                         'sklearn',
                         'matplotlib',
-                        'torchsummary'
+                        'torchsummary',
+                        'names'
                         ],
       zip_safe=False)
