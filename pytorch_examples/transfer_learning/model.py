@@ -17,6 +17,28 @@ def params(*args):
     return [{'params':list(a.parameters())} for a in args]
 
 
+class CustomModelSimple(BoilerPlate):
+
+    def __init__(self):
+        super().__init__()
+        model_ft = resnet34(pretrained=True)
+        for param in model_ft.parameters():
+            param.requires_grad = False
+
+        num_ftrs = model_ft.fc.in_features
+        # Here the size of each output sample is set to 2.
+        # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+        model_ft.fc = nn.Linear(num_ftrs, 2)
+        self.model = model_ft
+
+    def forward(self, x):
+        return self.model(x)
+
+    def configure_optimizers(self):
+        optimizer = optim.SGD(self.model.fc.parameters(), lr=0.001, momentum=0.9)
+        return optimizer
+
+
 class CustomModel(BoilerPlate):
 
     @staticmethod
