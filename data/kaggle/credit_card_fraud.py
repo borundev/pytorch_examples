@@ -12,15 +12,19 @@ from collections import Counter
 
 from data.kaggle import KaggleDataModule
 
+import multiprocessing
+
+
 
 class CreditCardFraudDataModule(KaggleDataModule):
 
-    def __init__(self,kaggle_username=None,kaggle_key=None,top_n=28,oversample=False, undersample=False):
+    def __init__(self,kaggle_username=None,kaggle_key=None,top_n=28,oversample=False, undersample=False, batch_size=32):
         super().__init__(kaggle_dataset='mlg-ulb/creditcardfraud',kaggle_username=kaggle_username,kaggle_key=kaggle_key)
         self.top_n=top_n
         self.oversample=oversample
         self.undersample=undersample
         assert not (self.oversample and self.undersample), "Only one of oversameple and undersample can be True"
+        self.batch_size=batch_size
 
     def setup(self, stage=None):
         original_data = pd.read_csv(self.data_dir/"creditcard.csv").astype('float32')
@@ -43,13 +47,13 @@ class CreditCardFraudDataModule(KaggleDataModule):
         self.num_features=len(relevant_columns)
 
         X_train = np.array(data_train[relevant_columns],dtype=np.float32)
-        y_train = np.array(data_train.Class, dtype=np.int)
+        y_train = np.array(data_train.Class, dtype=int)
 
         X_val = np.array(data_val[relevant_columns],dtype=np.float32)
-        y_val = np.array(data_val.Class, dtype=np.int)
+        y_val = np.array(data_val.Class, dtype=int)
 
         X_test = np.array(data_test[relevant_columns],dtype=np.float32)
-        y_test = np.array(data_test.Class, dtype=np.int)
+        y_test = np.array(data_test.Class, dtype=int)
 
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
@@ -97,13 +101,13 @@ class CreditCardFraudDataModule(KaggleDataModule):
         return torch.log(self.pos_frac / (1 - self.pos_frac))
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=2048, num_workers=8)
+        return DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=multiprocessing.cpu_count())
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, shuffle=False, batch_size=2048, num_workers=8)
+        return DataLoader(self.val_dataset, shuffle=False, batch_size=self.batch_size, num_workers=multiprocessing.cpu_count())
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, shuffle=False, batch_size=2048, num_workers=8)
+        return DataLoader(self.test_dataset, shuffle=False, batch_size=self.batch_size, num_workers=multiprocessing.cpu_count())
 
 
 def oversample(x,y):
@@ -154,10 +158,35 @@ def undersample(x,y):
     return x,y
 
 if __name__=='__main__':
-    dm=CreditCardFraudDataModule()
+    dm=CreditCardFraudDataModule(oversample=False,undersample=False)
+    dm.prepare_data()
     dm.setup()
     print(len(dm.train_dataset))
     c=Counter([dm.train_dataset[i][1] for i in range(len(dm.train_dataset))])
     print(c)
+
+    dm=CreditCardFraudDataModule(oversample=True,undersample=False)
+    dm.prepare_data()
+    dm.setup()
+    print(len(dm.train_dataset))
+    c=Counter([dm.train_dataset[i][1] for i in range(len(dm.train_dataset))])
+    print(c)
+
+    dm=CreditCardFraudDataModule(oversample=False,undersample=True)
+    dm.prepare_data()
+    dm.setup()
+    print(len(dm.train_dataset))
+    c=Counter([dm.train_dataset[i][1] for i in range(len(dm.train_dataset))])
+    print(c)
+
+    dm= CreditCardFraudDataModule()
+    dm.prepare_data()
+    dm.setup()
+    pos_bias=dm.get_initial_bias_positive()
+    class_weights = dm.get_class_weights(beta=.5)
+    print(len(dm.train_dataset))
+    c=Counter([dm.train_dataset[i][1] for i in range(len(dm.train_dataset))])
+    print(c)
+
     #print(next(iter(dm.train_dataloader())))
     #print(np.mean([dm.train_dataset[i] for i in range(len(dm.train_dataset))]))
